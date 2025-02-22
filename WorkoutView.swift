@@ -12,14 +12,12 @@ struct WorkoutView: View {
             ScrollView{
                 VStack (alignment: .center){
                     TextField("Enter Workout Title", text: $workoutTitle)
+                        .customTextFieldStyle()
                         .font(.largeTitle)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .multilineTextAlignment(.center)
-                        .padding()
                     
                     VStack {
                         ForEach($exercises, id: \.id) { $exercise in
-                            ExerciseView(exercise: $exercise).background(.ultraThinMaterial)
+                            ExerciseView(exercise: $exercise)
                         }
                         .onDelete(perform: deleteExercise)
                     }
@@ -32,12 +30,25 @@ struct WorkoutView: View {
                         ]))
                     }
                     .padding()
+                    
                 }
             }
+            .toolbarBackgroundVisibility(.hidden)
             .navigationBarItems(trailing: Button("Finish Workout") {
                 finishWorkout()
                 presentationMode.wrappedValue.dismiss()
-            }.padding(.trailing, 20).buttonStyle(.borderedProminent).tint(.green))
+            }.buttonStyle(.borderedProminent).tint(.green).saturation(0.85))
+            .toolbar{
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                        print("workout cancelled")
+                    }) {
+                        Label("Back", systemImage: "arrow.left")
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
         }.padding()
     }
     
@@ -64,15 +75,17 @@ struct ExerciseView: View {
     var body: some View {
         VStack(alignment: .leading) {
             TextField("Exercise Name", text: $exercise.name)
-                .font(.headline)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.vertical, 5)
+                .customTextFieldStyle()
+                .fontWeight(.medium)
             HStack{
                 Text("set").frame(width: 75).multilineTextAlignment(.center)
+                    .frame(width: 50)
                 Spacer()
                 Text("weight").frame(width: 75).multilineTextAlignment(.center)
+                    .frame(width: 75)
                 Spacer()
                 Text("reps").frame(width: 75).multilineTextAlignment(.center)
+                    .frame(width: 75)
                 Spacer()
                 ZStack{
                     Rectangle()
@@ -91,18 +104,15 @@ struct ExerciseView: View {
                     
                     HStack {
                         Text("\(set.number)")
+                            .frame(width: 50)
                         Spacer()
                         TextField("Weight", value: $set.weight, formatter: NumberFormatter())
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .keyboardType(.decimalPad)
+                            .customTextFieldStyle()
                             .frame(width: 75)
-                            .multilineTextAlignment(.center)
                         Spacer()
                         TextField("Reps", value: $set.reps, formatter: NumberFormatter())
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .keyboardType(.numberPad)
+                            .customTextFieldStyle()
                             .frame(width: 75)
-                            .multilineTextAlignment(.center)
                         Spacer()
                         ZStack{
                             Rectangle()
@@ -122,18 +132,22 @@ struct ExerciseView: View {
             }
             
             HStack {
+                Spacer()
                 Button("Add Set") {
                     exercise.sets.append(ExerciseSet(number: exercise.sets.count + 1, weight: 0, reps: 0))
                 }
-                .padding(.top, 5)
+                .customButtonStyle()
+                .tint(.green)
                 
                 Button("Remove Set") {
                     if !exercise.sets.isEmpty {
                         exercise.sets.removeLast()
                     }
                 }
-                .padding(.top, 5)
+                .customButtonStyle()
+                .tint(.red)
                 .disabled(exercise.sets.isEmpty)
+                Spacer()
             }
         }
         .padding()
@@ -152,6 +166,17 @@ struct ExerciseSet: Identifiable {
     var weight: Double
     var reps: Int
     var isCompleted: Bool = false
+}
+
+extension View {
+    func customTextFieldStyle() -> some View {
+        self.modifier(CustomTextFieldStyle())
+    }
+}
+extension View {
+    func customButtonStyle() -> some View {
+        self.modifier(CustomButtonStyle())
+    }
 }
 
 //struct WorkoutView_Previews: PreviewProvider {
