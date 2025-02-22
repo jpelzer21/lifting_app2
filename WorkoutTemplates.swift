@@ -18,23 +18,23 @@ struct WorkoutTemplates {
             ]),
             Exercise(name: "Incline Dumbbell Press", sets: [
                 ExerciseSet(number: 1, weight: 50, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10)
+                ExerciseSet(number: 2, weight: 50, reps: 10),
+                ExerciseSet(number: 3, weight: 50, reps: 10)
             ]),
             Exercise(name: "Tricep Extensions", sets: [
                 ExerciseSet(number: 1, weight: 50, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10)
+                ExerciseSet(number: 2, weight: 50, reps: 10),
+                ExerciseSet(number: 3, weight: 50, reps: 10)
             ]),
             Exercise(name: "Chest Fly", sets: [
                 ExerciseSet(number: 1, weight: 30, reps: 12),
-                ExerciseSet(number: 1, weight: 50, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10)
+                ExerciseSet(number: 2, weight: 50, reps: 10),
+                ExerciseSet(number: 3, weight: 50, reps: 10)
             ]),
             Exercise(name: "Shoulder Press", sets: [
                 ExerciseSet(number: 1, weight: 45, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10),
-                ExerciseSet(number: 1, weight: 50, reps: 10)
+                ExerciseSet(number: 2, weight: 50, reps: 10),
+                ExerciseSet(number: 3, weight: 50, reps: 10)
             ])
         ],
         "Leg Day": [
@@ -44,6 +44,22 @@ struct WorkoutTemplates {
             ]),
             Exercise(name: "Leg Press", sets: [
                 ExerciseSet(number: 1, weight: 200, reps: 12)
+            ])
+        ],
+        "Back Day": [
+            Exercise(name: "Pull Ups", sets: [
+                ExerciseSet(number: 1, weight: 135, reps: 10),
+                ExerciseSet(number: 2, weight: 225, reps: 8)
+            ]),
+            Exercise(name: "Iso-lateral Rows", sets: [
+                ExerciseSet(number: 1, weight: 200, reps: 12)
+            ])
+        ],
+        "Custom Workout": [
+            Exercise(name: "", sets: [
+                ExerciseSet(number: 1, weight: 0, reps: 0),
+                ExerciseSet(number: 2, weight: 0, reps: 0),
+                ExerciseSet(number: 3, weight: 0, reps: 0)
             ])
         ]
     ]

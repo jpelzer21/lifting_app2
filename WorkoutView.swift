@@ -2,42 +2,47 @@ import SwiftUI
 
 struct WorkoutView: View {
 //    @State private var workoutTitle: String = "Workout Title"
-    @State private var exercises: [Exercise] = []
-    @Environment(\.presentationMode) var presentationMode
     @Binding var workoutTitle: String
+    @Binding var exercises: [Exercise]
+    @Environment(\.presentationMode) var presentationMode
     
-   
     
     var body: some View {
         NavigationView {
-            VStack (alignment: .center){
-                TextField("Enter Workout Title", text: $workoutTitle)
-                    .font(.largeTitle)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .multilineTextAlignment(.center)
-                    .padding()
-                
-                VStack {
-                    ForEach($exercises) { $exercise in
-                        ExerciseView(exercise: $exercise)
+            ScrollView{
+                VStack (alignment: .center){
+                    TextField("Enter Workout Title", text: $workoutTitle)
+                        .font(.largeTitle)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .multilineTextAlignment(.center)
+                        .padding()
+                    
+                    VStack {
+                        ForEach($exercises, id: \.id) { $exercise in
+                            ExerciseView(exercise: $exercise).background(.ultraThinMaterial)
+                        }
+                        .onDelete(perform: deleteExercise)
                     }
-                    .onDelete(perform: deleteExercise)
-                }.disabled(false)
-                
-                Button("Add Exercise") {
-                    exercises.append(Exercise(name: "New Exercise"))
+                    
+                    Button("Add Exercise") {
+                        exercises.append(Exercise(name: "New Exercise", sets: [
+                            ExerciseSet(number: 1, weight: 0, reps: 0),
+                            ExerciseSet(number: 2, weight: 0, reps: 0),
+                            ExerciseSet(number: 3, weight: 0, reps: 0)
+                        ]))
+                    }
+                    .padding()
                 }
-                .padding()
             }
-//            .navigationTitle("Workout Tracker")
             .navigationBarItems(trailing: Button("Finish Workout") {
                 finishWorkout()
                 presentationMode.wrappedValue.dismiss()
-            })
-        }
+            }.padding(.trailing, 20).buttonStyle(.borderedProminent).tint(.green))
+        }.padding()
     }
     
     private func deleteExercise(at offsets: IndexSet) {
+        print("Deleting exercise at index:", offsets)
         exercises.remove(atOffsets: offsets)
     }
     
@@ -48,6 +53,7 @@ struct WorkoutView: View {
             for set in exercise.sets {
                 print("Set \(set.number): Weight: \(set.weight), Reps: \(set.reps)")
             }
+            print(Date().formatted(date: .numeric, time: .omitted))
         }
     }
 }
@@ -70,11 +76,11 @@ struct ExerciseView: View {
                 Spacer()
                 ZStack{
                     Rectangle()
+                        .fill(Color.gray)
                         .frame(width: 25, height: 25)
-                        .backgroundStyle(.gray)
                         .opacity(0.3)
                         .cornerRadius(8)
-                    Button{}label: {
+                    Button {} label: {
                         Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                     }
                 }
@@ -100,11 +106,14 @@ struct ExerciseView: View {
                         Spacer()
                         ZStack{
                             Rectangle()
+                                .fill(set.isCompleted ? Color.green : Color.gray)
                                 .frame(width: 25, height: 25)
-                                .backgroundStyle(.gray)
-                                .opacity(0.3)
+                                .opacity(set.isCompleted ? 0.8 : 0.3)
                                 .cornerRadius(8)
-                            Button{}label: {
+                            Button {
+                                set.isCompleted.toggle()
+                                print(set.isCompleted)
+                            } label: {
                                 Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                             }
                         }
@@ -142,11 +151,12 @@ struct ExerciseSet: Identifiable {
     var number: Int
     var weight: Double
     var reps: Int
+    var isCompleted: Bool = false
 }
 
-struct WorkoutView_Previews: PreviewProvider {
-    static var previews: some View {
-        WorkoutView(workoutTitle: .constant(""))
-    }
-}
+//struct WorkoutView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        WorkoutView(workoutTitle: .constant(""), exercises: .constant([]))
+//    }
+//}
 
