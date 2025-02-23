@@ -1,10 +1,12 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct WorkoutView: View {
 //    @State private var workoutTitle: String = "Workout Title"
     @Binding var workoutTitle: String
     @Binding var exercises: [Exercise]
     @Environment(\.presentationMode) var presentationMode
+    @State private var showingAlert = false
     
     
     var body: some View {
@@ -40,8 +42,17 @@ struct WorkoutView: View {
             }
             .toolbarBackgroundVisibility(.hidden)
             .navigationBarItems(trailing: Button("Finish Workout") {
-                finishWorkout()
-                presentationMode.wrappedValue.dismiss()
+                showingAlert = true
+            }.alert(isPresented:$showingAlert) {
+                Alert(
+                    title: Text("Finish Workout?"),
+                    primaryButton: .default(Text("Finish")) {
+                        print("Deleting...")
+                        finishWorkout()
+                        presentationMode.wrappedValue.dismiss()
+                    },
+                    secondaryButton: .cancel(Text("Stay"))
+                )
             }.buttonStyle(.borderedProminent).tint(.green).saturation(0.85))
             .toolbar{
                 ToolbarItem(placement: .topBarLeading) {
@@ -63,15 +74,60 @@ struct WorkoutView: View {
     }
     
     private func finishWorkout() {
-        print("Workout Title: \(workoutTitle.lowercased())")
+        writeData()
+    }
+    
+    private func writeData() {
+        let db = Firestore.firestore()
+        
         for exercise in exercises {
-            print("Exercise: \(exercise.name.lowercased())")
+            let exerciseRef = db.collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_")).collection("sets")
+
             for set in exercise.sets {
-                print("Set \(set.number): Weight: \(set.weight), Reps: \(set.reps)")
+                let newSetRef = exerciseRef.document() // Auto-generate a set ID
+
+                let setData: [String: Any] = [
+                    "date": Timestamp(date: Date()),
+                    "weight": set.weight,
+                    "reps": set.reps
+                ]
+
+                newSetRef.setData(setData) { error in
+                    if let error = error {
+                        print("Error writing \(exercise.name) set: \(error.localizedDescription)")
+                    } else {
+                        print("Set added for \(exercise.name): \(setData)")
+                    }
+                }
             }
-            print(Date().formatted(date: .numeric, time: .omitted))
         }
     }
+    
+    
+    
+    
+//    private func writeData() {
+//        let db = Firestore.firestore()
+//        let benchPressSetsRef = db.collection("exercises").document("bench_press").collection("sets")
+//
+//        for set in exercises.first(where: { $0.name == "Bench Press" })?.sets ?? [] {
+//            let newSetRef = benchPressSetsRef.document() // Auto-generate a set ID
+//
+//            let setData: [String: Any] = [
+//                "date": Timestamp(date: Date()), // Store current date as Firestore Timestamp
+//                "weight": set.weight,
+//                "reps": set.reps
+//            ]
+//
+//            newSetRef.setData(setData) { error in
+//                if let error = error {
+//                    print("Error writing set to Firestore: \(error.localizedDescription)")
+//                } else {
+//                    print("Set added successfully: \(setData)")
+//                }
+//            }
+//        }
+//    }
 }
 
 struct ExerciseView: View {
