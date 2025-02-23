@@ -1,9 +1,11 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct HomePageView: View {
     @State private var showWorkoutView = false
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedWorkoutTitle: String = "Empty Workout"
+    
     
     var body: some View {
         VStack {
@@ -62,17 +64,19 @@ struct HomePageView: View {
             
             //test button
             Button("test") {
-                // Get the Chest Day workout template from WorkoutTemplates
-                if let chestDayExercises = WorkoutTemplates.templates["Chest Day"] {
-                    for exercise in chestDayExercises {
-                        print("Exercise: \(exercise.name)")
-                        for set in exercise.sets {
-                            print("Set \(set.number): \(set.reps) reps at \(set.weight) lbs")
-                        }
-                    }
-                } else {
-                    print("No Chest Day template found.")
-                }
+//                // Get the Chest Day workout template from WorkoutTemplates
+//                if let chestDayExercises = WorkoutTemplates.templates["Chest Day"] {
+//                    for exercise in chestDayExercises {
+//                        print("Exercise: \(exercise.name)")
+//                        for set in exercise.sets {
+//                            print("Set \(set.number): \(set.reps) reps at \(set.weight) lbs")
+//                        }
+//                    }
+//                } else {
+//                    print("No Chest Day template found.")
+//                }
+                
+               
             }
             .font(.title)
             .padding()

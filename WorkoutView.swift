@@ -11,9 +11,14 @@ struct WorkoutView: View {
         NavigationView {
             ScrollView{
                 VStack (alignment: .center){
-                    TextField("Enter Workout Title", text: $workoutTitle)
-                        .customTextFieldStyle()
+                    Text(workoutTitle)
                         .font(.largeTitle)
+                        .fontWeight(.medium)
+                        .multilineTextAlignment(.center)
+                        .padding()
+//                    TextField("Enter Workout Title", text: $workoutTitle)
+//                        .customTextFieldStyle()
+//                        .font(.largeTitle)
                     
                     VStack {
                         ForEach($exercises, id: \.id) { $exercise in
@@ -58,9 +63,9 @@ struct WorkoutView: View {
     }
     
     private func finishWorkout() {
-        print("Workout Title: \(workoutTitle)")
+        print("Workout Title: \(workoutTitle.lowercased())")
         for exercise in exercises {
-            print("Exercise: \(exercise.name)")
+            print("Exercise: \(exercise.name.lowercased())")
             for set in exercise.sets {
                 print("Set \(set.number): Weight: \(set.weight), Reps: \(set.reps)")
             }
