@@ -34,6 +34,23 @@ struct CustomButtonStyle: ViewModifier {
 }
 
 
+struct HomeButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.roundedRectangle)
+            .saturation(0.9)
+            .padding(5)
+            .font(.title)
+            .background(.pink)
+            .foregroundColor(.white)
+            .cornerRadius(10)
+            .shadow(radius: 10)
+    }
+}
+
+
+
 
 //Menu("menu button") {
 //    Button {

@@ -14,14 +14,8 @@ struct HomePageView: View {
                 selectedWorkoutTitle = "Chest Day"
                 selectedExercises = WorkoutTemplates.templates["Chest Day"] ?? []
                 showWorkoutView.toggle()
-                
             }
-            .font(.title)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .shadow(radius: 10)
+            .homeButtonStyle()
             
             // Back Button
             Button("Back") {
@@ -29,12 +23,7 @@ struct HomePageView: View {
                 selectedExercises = WorkoutTemplates.templates["Back Day"] ?? []
                 showWorkoutView.toggle()
             }
-            .font(.title)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .shadow(radius: 10)
+            .homeButtonStyle()
             
             // Legs Button
             Button("Legs") {
@@ -42,12 +31,7 @@ struct HomePageView: View {
                 selectedExercises = WorkoutTemplates.templates["Leg Day"] ?? []
                 showWorkoutView.toggle()
             }
-            .font(.title)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .shadow(radius: 10)
+            .homeButtonStyle()
             
             // Custom Button
             Button("Custom") {
@@ -55,12 +39,7 @@ struct HomePageView: View {
                 selectedExercises = WorkoutTemplates.templates["Custom Day"] ?? []
                 showWorkoutView.toggle()
             }
-            .font(.title)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .shadow(radius: 10)
+            .homeButtonStyle()
             
             //test button
             Button("test") {
@@ -88,12 +67,7 @@ struct HomePageView: View {
                         }
                     }
             }
-            .font(.title)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .shadow(radius: 10)
+            .homeButtonStyle()
         }
         .navigationTitle("Home")
         .fullScreenCover(isPresented: $showWorkoutView) {
@@ -101,6 +75,15 @@ struct HomePageView: View {
         }
     }
 }
+
+
+extension View {
+    func homeButtonStyle() -> some View {
+        self.modifier(HomeButtonStyle())
+    }
+}
+
+
 
 struct HomePageView_Previews: PreviewProvider {
     static var previews: some View {

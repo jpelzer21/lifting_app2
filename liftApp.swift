@@ -25,8 +25,8 @@ struct liftApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomePageView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            ContentView()
+//                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }
