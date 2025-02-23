@@ -7,6 +7,7 @@ struct WorkoutView: View {
     @Binding var exercises: [Exercise]
     @Environment(\.presentationMode) var presentationMode
     @State private var showingAlert = false
+    private let db = Firestore.firestore()
     
     
     var body: some View {
@@ -18,9 +19,6 @@ struct WorkoutView: View {
                         .fontWeight(.medium)
                         .multilineTextAlignment(.center)
                         .padding()
-//                    TextField("Enter Workout Title", text: $workoutTitle)
-//                        .customTextFieldStyle()
-//                        .font(.largeTitle)
                     
                     VStack {
                         ForEach($exercises, id: \.id) { $exercise in
@@ -36,9 +34,16 @@ struct WorkoutView: View {
                             ExerciseSet(number: 3, weight: 0, reps: 0)
                         ]))
                     }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle)
+                    .tint(.blue)
+                    .saturation(0.9)
                     .padding()
                     
                 }
+            }
+            .onTapGesture {// Dismiss the keyboard when tapping anywhere on the screen
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             .toolbarBackgroundVisibility(.hidden)
             .navigationBarItems(trailing: Button("Finish Workout") {
@@ -66,6 +71,12 @@ struct WorkoutView: View {
                 }
             }
         }.padding()
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
     }
     
     private func deleteExercise(at offsets: IndexSet) {
@@ -78,60 +89,35 @@ struct WorkoutView: View {
     }
     
     private func writeData() {
-        let db = Firestore.firestore()
-        
         for exercise in exercises {
             let exerciseRef = db.collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_")).collection("sets")
 
             for set in exercise.sets {
-                let newSetRef = exerciseRef.document() // Auto-generate a set ID
-
-                let setData: [String: Any] = [
-                    "date": Timestamp(date: Date()),
-                    "weight": set.weight,
-                    "reps": set.reps
-                ]
-
-                newSetRef.setData(setData) { error in
-                    if let error = error {
-                        print("Error writing \(exercise.name) set: \(error.localizedDescription)")
-                    } else {
-                        print("Set added for \(exercise.name): \(setData)")
+                if set.isCompleted {
+                    let newSetRef = exerciseRef.document() // Auto-generate a set ID
+                    
+                    let setData: [String: Any] = [
+                        "date": Timestamp(date: Date()),
+                        "weight": set.weight,
+                        "reps": set.reps
+                    ]
+                    
+                    newSetRef.setData(setData) { error in
+                        if let error = error {
+                            print("Error writing \(exercise.name) set: \(error.localizedDescription)")
+                        } else {
+                            print("Set added for \(exercise.name): \(setData)")
+                        }
                     }
                 }
             }
         }
     }
-    
-    
-    
-    
-//    private func writeData() {
-//        let db = Firestore.firestore()
-//        let benchPressSetsRef = db.collection("exercises").document("bench_press").collection("sets")
-//
-//        for set in exercises.first(where: { $0.name == "Bench Press" })?.sets ?? [] {
-//            let newSetRef = benchPressSetsRef.document() // Auto-generate a set ID
-//
-//            let setData: [String: Any] = [
-//                "date": Timestamp(date: Date()), // Store current date as Firestore Timestamp
-//                "weight": set.weight,
-//                "reps": set.reps
-//            ]
-//
-//            newSetRef.setData(setData) { error in
-//                if let error = error {
-//                    print("Error writing set to Firestore: \(error.localizedDescription)")
-//                } else {
-//                    print("Set added successfully: \(setData)")
-//                }
-//            }
-//        }
-//    }
 }
 
 struct ExerciseView: View {
     @Binding var exercise: Exercise
+    @State private var buttonPress = false
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -160,19 +146,26 @@ struct ExerciseView: View {
                 }
             }
             ForEach($exercise.sets) { $set in
-                VStack{
-                    
+                
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(set.isCompleted ? Color.green : Color(UIColor.systemBackground))
+                        .opacity(set.isCompleted ? 0.3 : 1)
+                        .saturation(set.isCompleted ? 0.6 : 1)
                     
                     HStack {
+                    
                         Text("\(set.number)")
                             .frame(width: 50)
                         Spacer()
                         TextField("Weight", value: $set.weight, formatter: NumberFormatter())
                             .customTextFieldStyle()
+                            .keyboardType(.numberPad)
                             .frame(width: 75)
                         Spacer()
                         TextField("Reps", value: $set.reps, formatter: NumberFormatter())
                             .customTextFieldStyle()
+                            .keyboardType(.numberPad)
                             .frame(width: 75)
                         Spacer()
                         ZStack{
@@ -183,13 +176,16 @@ struct ExerciseView: View {
                                 .cornerRadius(8)
                             Button {
                                 set.isCompleted.toggle()
-                                print(set.isCompleted)
+                                let generator = UIImpactFeedbackGenerator(style: .medium)
+                                generator.impactOccurred()
                             } label: {
                                 Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                             }
                         }
                     }
                 }
+                
+                
             }
             
             HStack {

@@ -6,21 +6,23 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct CustomTextFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .textFieldStyle(RoundedBorderTextFieldStyle())
             .multilineTextAlignment(.center)
-//            .keyboardType(.numberPad)
             .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { obj in
                 if let textField = obj.object as? UITextField {
-                    textField.selectedTextRange = textField.textRange(from: textField.beginningOfDocument, to: textField.endOfDocument)
+                    DispatchQueue.main.async {
+                        textField.selectedTextRange = textField.textRange(from: textField.beginningOfDocument, to: textField.endOfDocument)
+                    }
                 }
             }
+            .padding(5)
     }
 }
-
 
 struct CustomButtonStyle: ViewModifier {
     func body(content: Content) -> some View {
@@ -28,11 +30,10 @@ struct CustomButtonStyle: ViewModifier {
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
             .controlSize(.small)
-            .saturation(0.7)
+            .saturation(0.8)
             .padding(.top, 5)
     }
 }
-
 
 struct HomeButtonStyle: ViewModifier {
     func body(content: Content) -> some View {
@@ -48,21 +49,4 @@ struct HomeButtonStyle: ViewModifier {
             .shadow(radius: 10)
     }
 }
-
-
-
-
-//Menu("menu button") {
-//    Button {
-//    } label: {
-//        Label("default", systemImage: "plus")
-//    }
-//    Button(role: .destructive) {
-//    } label: {
-//        Label("destructive", systemImage: "trash")
-//    }
-//}
-
-
-
 

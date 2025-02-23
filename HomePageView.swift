@@ -43,29 +43,6 @@ struct HomePageView: View {
             
             //test button
             Button("test") {
-                let db = Firestore.firestore()
-                    let setsRef = db.collection("exercises").document("Bench Press").collection("sets")
-
-                    setsRef.getDocuments { snapshot, error in
-                        if let error = error {
-                            print("Error fetching sets: \(error.localizedDescription)")
-                            return
-                        }
-
-                        guard let documents = snapshot?.documents else {
-                            print("No sets found for bench press.")
-                            return
-                        }
-
-                        for document in documents {
-                            let data = document.data()
-                            let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
-                            let reps = (data["reps"] as? Int) ?? 0
-                            let weight = (data["weight"] as? Double) ?? 0.0
-                            
-                            print("Date: \(date), Reps: \(reps), Weight: \(weight) lbs")
-                        }
-                    }
             }
             .homeButtonStyle()
         }
