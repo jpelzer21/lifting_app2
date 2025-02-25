@@ -24,7 +24,7 @@ struct ContentView: View {
             
             
             NavigationStack() {
-                Text("Data Visualization View")
+                ExerciseListView()
                     .navigationTitle("Data Visualization")
             }
             .tabItem {

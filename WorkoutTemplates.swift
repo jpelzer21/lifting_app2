@@ -80,7 +80,7 @@ struct WorkoutTemplates {
                 ExerciseSet(number: 2, weight: 0, reps: 10),
                 ExerciseSet(number: 1, weight: 0, reps: 10)
             ]),
-            Exercise(name: "BarBell Rows", sets: [
+            Exercise(name: "Barbell Rows", sets: [
                 ExerciseSet(number: 1, weight: 0, reps: 10),
                 ExerciseSet(number: 2, weight: 0, reps: 10),
                 ExerciseSet(number: 1, weight: 0, reps: 10)

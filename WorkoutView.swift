@@ -50,9 +50,9 @@ struct WorkoutView: View {
                 showingAlert = true
             }.alert(isPresented:$showingAlert) {
                 Alert(
-                    title: Text("Finish Workout?"),
+                    title: Text("You have completed \(completedSets()) exercises"),
                     primaryButton: .default(Text("Finish")) {
-                        print("Deleting...")
+                        print("Workout Finished")
                         finishWorkout()
                         presentationMode.wrappedValue.dismiss()
                     },
@@ -79,6 +79,24 @@ struct WorkoutView: View {
         }
     }
     
+    private func completedSets() -> Int {
+        var result = 0
+        for exercise in exercises {
+            var allSetsComplete = true
+            for set in exercise.sets {
+                if !set.isCompleted {
+                    allSetsComplete = false
+                }
+            }
+            if allSetsComplete {
+                result += 1
+            } else if exercise.allSetsCompleted {
+                result += 1
+            }
+        }
+        return result
+    }
+    
     private func deleteExercise(at offsets: IndexSet) {
         print("Deleting exercise at index:", offsets)
         exercises.remove(atOffsets: offsets)
@@ -90,14 +108,43 @@ struct WorkoutView: View {
     
     private func writeData() {
         for exercise in exercises {
-            let exerciseRef = db.collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_")).collection("sets")
-
+            // Define the document reference for the exercise
+            let exerciseRef = db.collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_"))
+            
+            // Check if the exercise document exists
+            exerciseRef.getDocument { (document, error) in
+                if let error = error {
+                    print("Error checking exercise document: \(error.localizedDescription)")
+                    return
+                }
+                
+                if let document = document, document.exists {
+                    // If document exists, we don't need to add the name field
+                    print("\(exercise.name) already exists in the database.")
+                } else {
+                    // If document doesn't exist, create it and add the name field
+                    let exerciseData: [String: Any] = [
+                        "name": exercise.name
+                    ]
+                    
+                    exerciseRef.setData(exerciseData) { error in
+                        if let error = error {
+                            print("Error adding name for \(exercise.name): \(error.localizedDescription)")
+                        } else {
+                            print("Name added for \(exercise.name)!")
+                        }
+                    }
+                }
+            }
+            
+            // Add the sets data as before
             for set in exercise.sets {
                 if set.isCompleted {
-                    let newSetRef = exerciseRef.document() // Auto-generate a set ID
+                    let newSetRef = exerciseRef.collection("sets").document() // Auto-generate a set ID
                     
                     let setData: [String: Any] = [
                         "date": Timestamp(date: Date()),
+                        "setNum": set.number,
                         "weight": set.weight,
                         "reps": set.reps
                     ]
@@ -136,11 +183,13 @@ struct ExerciseView: View {
                 Spacer()
                 ZStack{
                     Rectangle()
-                        .fill(Color.gray)
+                        .fill(exercise.allSetsCompleted ? Color.green : Color.gray)
                         .frame(width: 25, height: 25)
-                        .opacity(0.3)
+                        .opacity(exercise.allSetsCompleted ? 0.8 : 0.3)
                         .cornerRadius(8)
-                    Button {} label: {
+                    Button {
+                        exercise.allSetsCompleted.toggle()
+                    } label: {
                         Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                     }
                 }
@@ -149,9 +198,9 @@ struct ExerciseView: View {
                 
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(set.isCompleted ? Color.green : Color(UIColor.systemBackground))
-                        .opacity(set.isCompleted ? 0.3 : 1)
-                        .saturation(set.isCompleted ? 0.6 : 1)
+                        .fill((set.isCompleted || exercise.allSetsCompleted) ? Color.green : Color(UIColor.systemBackground))
+                        .opacity((set.isCompleted || exercise.allSetsCompleted) ? 0.3 : 1)
+                        .saturation((set.isCompleted || exercise.allSetsCompleted) ? 0.6 : 1)
                     
                     HStack {
                     
@@ -160,19 +209,19 @@ struct ExerciseView: View {
                         Spacer()
                         TextField("Weight", value: $set.weight, formatter: NumberFormatter())
                             .customTextFieldStyle()
-                            .keyboardType(.numberPad)
+                            .keyboardType(.decimalPad)
                             .frame(width: 75)
                         Spacer()
                         TextField("Reps", value: $set.reps, formatter: NumberFormatter())
                             .customTextFieldStyle()
-                            .keyboardType(.numberPad)
+                            .keyboardType(.decimalPad)
                             .frame(width: 75)
                         Spacer()
                         ZStack{
                             Rectangle()
-                                .fill(set.isCompleted ? Color.green : Color.gray)
+                                .fill((set.isCompleted || exercise.allSetsCompleted) ? Color.green : Color.gray)
                                 .frame(width: 25, height: 25)
-                                .opacity(set.isCompleted ? 0.8 : 0.3)
+                                .opacity((set.isCompleted || exercise.allSetsCompleted) ? 0.8 : 0.3)
                                 .cornerRadius(8)
                             Button {
                                 set.isCompleted.toggle()
@@ -215,15 +264,19 @@ struct Exercise: Identifiable {
     let id = UUID()
     var name: String
     var sets: [ExerciseSet] = [ExerciseSet(number: 1, weight: 0, reps: 0)]
+    var allSetsCompleted: Bool = false
 }
+
 
 struct ExerciseSet: Identifiable {
     let id = UUID()
     var number: Int
     var weight: Double
     var reps: Int
+    var date: Date = Date()
     var isCompleted: Bool = false
 }
+
 
 extension View {
     func customTextFieldStyle() -> some View {
