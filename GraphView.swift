@@ -17,6 +17,20 @@ struct GraphView: View {
             case reps = "Reps"
             case volume = "Volume"
         }
+    
+    private var maxYAxisValue: Double {
+            let maxValue: Double
+            switch selectedMetric {
+            case .weight:
+                maxValue = exerciseSets.map { $0.weight }.max() ?? 0
+            case .reps:
+                maxValue = Double(exerciseSets.map { $0.reps }.max() ?? 0)
+            case .volume:
+                maxValue = exerciseSets.map { $0.weight * Double($0.reps) }.max() ?? 0
+            }
+            return maxValue * 2 // Double the maximum value for better scaling
+        }
+    
 
     var body: some View {
         VStack {
@@ -37,7 +51,7 @@ struct GraphView: View {
                     .padding()
             } else {
                 Chart(exerciseSets) { set in
-                    LineMark(
+                    PointMark(
                         x: .value("Date", set.date),
                         y: .value(selectedMetric == .weight ? "Weight" : selectedMetric == .reps ? "Reps" : "Volume",
                                   selectedMetric == .weight ? set.weight : selectedMetric == .reps ? Double(set.reps) : set.weight * Double(set.reps))
@@ -48,12 +62,15 @@ struct GraphView: View {
                 }
                 .chartXAxis {
                     AxisMarks(position: .bottom) {
-                        AxisValueLabel(format: .dateTime.month().day()) // Format for better readability
+                        AxisValueLabel(format: .dateTime.month().day())
                     }
                 }
                 .chartYAxis {
                     AxisMarks(position: .trailing)
                 }
+                .chartYScale(domain: 0...maxYAxisValue) // Set dynamic y-axis range
+                    .frame(height: 300)
+                    .padding()
                 .frame(height: 300)
                 .padding()
             }

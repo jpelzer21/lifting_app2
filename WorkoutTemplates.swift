@@ -26,6 +26,11 @@ struct WorkoutTemplates {
                 ExerciseSet(number: 2, weight: 50, reps: 10),
                 ExerciseSet(number: 3, weight: 50, reps: 10)
             ]),
+            Exercise(name: "Overhead Tricep Extensions", sets: [
+                ExerciseSet(number: 1, weight: 50, reps: 10),
+                ExerciseSet(number: 2, weight: 50, reps: 10),
+                ExerciseSet(number: 3, weight: 50, reps: 10)
+            ]),
             Exercise(name: "Lateral Raises", sets: [
                 ExerciseSet(number: 1, weight: 45, reps: 10),
                 ExerciseSet(number: 2, weight: 50, reps: 10),

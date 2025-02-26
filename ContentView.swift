@@ -16,7 +16,7 @@ struct ContentView: View {
                     .navigationTitle("Home")
             }
             .tabItem {
-                Text("Home View")
+                Text("Home")
                 Image(systemName: "house.fill")
                     .renderingMode(.template)
             }
@@ -28,7 +28,7 @@ struct ContentView: View {
                     .navigationTitle("Data Visualization")
             }
             .tabItem {
-                Text("Data ")
+                Text("Data")
                 Image(systemName: "chart.line.uptrend.xyaxis")
             }
 //            .badge("12")
@@ -36,11 +36,11 @@ struct ContentView: View {
             
             
             NavigationStack() {
-                Text("Profile view")
-                    .navigationTitle("Profile")
+                CalendarView()
+                    .navigationTitle("Calendar")
             }
             .tabItem {
-                Label("Profile", systemImage: "person.fill")
+                Label("Calendar", systemImage: "calendar")
             }
             .tag(2)
             

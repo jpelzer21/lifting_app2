@@ -22,24 +22,46 @@ struct WorkoutView: View {
                     
                     VStack {
                         ForEach($exercises, id: \.id) { $exercise in
-                            ExerciseView(exercise: $exercise)
+                            ExerciseView(exercise: $exercise, deleteAction: {
+                                if let index = exercises.firstIndex(where: { $0.id == exercise.id }) {
+                                    exercises.remove(at: index)
+                                }
+                            })
                         }
-                        .onDelete(perform: deleteExercise)
+                        .listRowBackground(Color(UIColor.systemBackground))
+                        .listRowSeparator(.hidden)
+                        
+                        HStack {
+                            Spacer()
+                            Button("Add Exercise") {
+                                let generator = UIImpactFeedbackGenerator(style: .medium)
+                                generator.impactOccurred()
+                                exercises.append(Exercise(name: "New Exercise", sets: [
+                                    ExerciseSet(number: 1, weight: 0, reps: 0)
+                                ]))
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .buttonBorderShape(.roundedRectangle)
+                            .tint(.blue)
+                            .saturation(0.9)
+                            .padding()
+                            Button("Save Template") {
+                                saveWorkoutAsTemplate()
+                            }
+                            Spacer()
+                        }
+                        .listRowBackground(Color(UIColor.systemBackground))
+                        .listRowSeparator(.hidden)
                     }
+                    .edgesIgnoringSafeArea(.all)
+                    .listStyle(GroupedListStyle())
                     
-                    Button("Add Exercise") {
-                        exercises.append(Exercise(name: "New Exercise", sets: [
-                            ExerciseSet(number: 1, weight: 0, reps: 0),
-                            ExerciseSet(number: 2, weight: 0, reps: 0),
-                            ExerciseSet(number: 3, weight: 0, reps: 0)
-                        ]))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.roundedRectangle)
-                    .tint(.blue)
-                    .saturation(0.9)
-                    .padding()
                     
+                    
+                    
+                }
+                .onAppear {
+                    loadWorkoutTemplate()
                 }
             }
             .onTapGesture {// Dismiss the keyboard when tapping anywhere on the screen
@@ -53,6 +75,7 @@ struct WorkoutView: View {
                     title: Text("You have completed \(completedSets()) exercises"),
                     primaryButton: .default(Text("Finish")) {
                         print("Workout Finished")
+                        saveWorkoutAsTemplate()
                         finishWorkout()
                         presentationMode.wrappedValue.dismiss()
                     },
@@ -95,11 +118,6 @@ struct WorkoutView: View {
             }
         }
         return result
-    }
-    
-    private func deleteExercise(at offsets: IndexSet) {
-        print("Deleting exercise at index:", offsets)
-        exercises.remove(atOffsets: offsets)
     }
     
     private func finishWorkout() {
@@ -160,17 +178,112 @@ struct WorkoutView: View {
             }
         }
     }
+    
+    private func saveWorkoutAsTemplate() {
+        let workoutRef = db.collection("templates").document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
+        var exercisesData: [[String: Any]] = []
+        
+        for exercise in exercises {
+            var setsData: [[String: Any]] = []
+            for set in exercise.sets {
+                setsData.append([
+                    "setNum": set.number,
+                    "weight": set.weight,
+                    "reps": set.reps
+                ])
+            }
+            let exerciseData: [String: Any] = [
+                "name": exercise.name,
+                "sets": setsData
+            ]
+            exercisesData.append(exerciseData)
+        }
+        workoutRef.setData(["exercises": exercisesData]) { error in
+            if let error = error {
+                print("Error saving template: \(error.localizedDescription)")
+            } else {
+                print("Workout template saved successfully!")
+            }
+        }
+    }
+    
+    private func loadWorkoutTemplate() {
+        let workoutRef = db.collection("templates").document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
+
+        workoutRef.getDocument { (document, error) in
+            if let error = error {
+                print("Error loading template: \(error.localizedDescription)")
+                return
+            }
+
+            if let document = document, document.exists, let data = document.data(),
+               let exercisesData = data["exercises"] as? [[String: Any]] {
+                
+                exercises = exercisesData.compactMap { exerciseDict in
+                    guard let name = exerciseDict["name"] as? String,
+                          let setsData = exerciseDict["sets"] as? [[String: Any]] else { return nil }
+                    
+                    let sets = setsData.compactMap { setDict -> ExerciseSet? in
+                        guard let setNum = setDict["setNum"] as? Int,
+                              let weight = setDict["weight"] as? Double,
+                              let reps = setDict["reps"] as? Int else { return nil }
+                        return ExerciseSet(number: setNum, weight: weight, reps: reps)
+                    }
+
+                    return Exercise(name: name, sets: sets)
+                }
+            }
+        }
+    }
+    
+    
+    
 }
 
 struct ExerciseView: View {
     @Binding var exercise: Exercise
     @State private var buttonPress = false
+    @State private var showingAlert = false
+    var deleteAction: () -> Void
+    
+    let generator = UIImpactFeedbackGenerator(style: .medium)
+    
+    private let doubleFormatter: NumberFormatter = {
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        return numberFormatter
+    }()
     
     var body: some View {
+        
+        
         VStack(alignment: .leading) {
-            TextField("Exercise Name", text: $exercise.name)
-                .customTextFieldStyle()
-                .fontWeight(.medium)
+            HStack {
+                Button {
+                } label: {
+                    Text("...")
+                }
+                TextField("Exercise Name", text: $exercise.name)
+                    .customTextFieldStyle()
+                    .fontWeight(.medium)
+                Button {
+                    showingAlert = true
+                    print("workout deleted")
+                } label: {
+                    Text("Delete")
+                }.alert(isPresented:$showingAlert) {
+                    Alert(
+                        title: Text("Delete \(exercise.name)?"),
+                        primaryButton: .destructive(Text("Delete")) {
+                            print("\(exercise.name) deleted")
+                            withAnimation {
+                                deleteAction()
+                            }
+                        },
+                        secondaryButton: .cancel(Text("Cancel"))
+                    )
+                }
+            }
             HStack{
                 Text("set").frame(width: 75).multilineTextAlignment(.center)
                     .frame(width: 50)
@@ -225,7 +338,6 @@ struct ExerciseView: View {
                                 .cornerRadius(8)
                             Button {
                                 set.isCompleted.toggle()
-                                let generator = UIImpactFeedbackGenerator(style: .medium)
                                 generator.impactOccurred()
                             } label: {
                                 Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
@@ -240,13 +352,17 @@ struct ExerciseView: View {
             HStack {
                 Spacer()
                 Button("Add Set") {
-                    exercise.sets.append(ExerciseSet(number: exercise.sets.count + 1, weight: 0, reps: 0))
+                    generator.impactOccurred()
+                    exercise.sets.append(ExerciseSet(
+                        number: exercise.sets.count + 1, weight: exercise.sets[exercise.sets.count-1].weight, reps: exercise.sets[exercise.sets.count-1].reps)
+                    )
                 }
                 .customButtonStyle()
                 .tint(.green)
                 
                 Button("Remove Set") {
                     if !exercise.sets.isEmpty {
+                        generator.impactOccurred()
                         exercise.sets.removeLast()
                     }
                 }
