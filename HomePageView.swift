@@ -5,67 +5,75 @@ struct HomePageView: View {
     @State private var showWorkoutView = false
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedWorkoutTitle: String = "Empty Workout"
+    @State private var templateNames: [String] = []
+    @State private var isLoading = false
     
     
     var body: some View {
         VStack {
-            // Chest Button
-            Button("Chest") {
-                selectedWorkoutTitle = "Chest Day"
-                fetchTemplate(name: selectedWorkoutTitle) { exercises in
-                    selectedExercises = exercises
-                    showWorkoutView.toggle()
-                }
-//                selectedExercises = WorkoutTemplates.templates["Chest Day"] ?? []
-//                showWorkoutView.toggle()
-            }
-            .homeButtonStyle()
             
-            // Back Button
-            Button("Back") {
-                selectedWorkoutTitle = "Back Day"
-                fetchTemplate(name: selectedWorkoutTitle) { exercises in
-                    selectedExercises = exercises
-                    showWorkoutView.toggle()
+            if isLoading {
+                ProgressView("Loading templates...")
+                    .padding()
+            } else {
+                VStack {
+                    Spacer()
+                    ForEach(templateNames, id: \.self) { template in
+                        Button(template) {
+                            selectedWorkoutTitle = template
+                            fetchTemplate(name: selectedWorkoutTitle) { exercises in
+                                selectedExercises = exercises
+                                showWorkoutView.toggle()
+                            }
+                        }
+                        .homeButtonStyle()
+                    }
+                    
+                    // Custom Button
+                    Button("New Template") {
+                        selectedWorkoutTitle = "Custom Workout"
+                        fetchTemplate(name: selectedWorkoutTitle) { exercises in
+                            selectedExercises = exercises
+                            showWorkoutView.toggle()
+                        }
+                    }
+                    .homeButtonStyle()
+                    
+                    //test button
+//                    Button("test") {
+//                    }
+//                    .homeButtonStyle()
+                    Spacer()
                 }
-//                selectedExercises = WorkoutTemplates.templates["Back Day"] ?? []
-//                showWorkoutView.toggle()
+                
+                
             }
-            .homeButtonStyle()
-            
-            // Legs Button
-            Button("Legs") {
-                selectedWorkoutTitle = "Leg Day"
-                fetchTemplate(name: selectedWorkoutTitle) { exercises in
-                    selectedExercises = exercises
-                    showWorkoutView.toggle()
-                }
-//                selectedExercises = WorkoutTemplates.templates["Leg Day"] ?? []
-//                showWorkoutView.toggle()
-            }
-            .homeButtonStyle()
-            
-            // Custom Button
-            Button("Custom") {
-                selectedWorkoutTitle = "Custom Workout"
-                fetchTemplate(name: selectedWorkoutTitle) { exercises in
-                    selectedExercises = exercises
-                    showWorkoutView.toggle()
-                }
-//                selectedExercises = WorkoutTemplates.templates["Custom Day"] ?? []
-//                showWorkoutView.toggle()
-            }
-            .homeButtonStyle()
-            
-            //test button
-            Button("test") {
-            }
-            .homeButtonStyle()
+        }
+        .onAppear {
+            fetchTemplateNames()
         }
         .navigationTitle("Home")
         .fullScreenCover(isPresented: $showWorkoutView) {
             WorkoutView(workoutTitle: $selectedWorkoutTitle, exercises: $selectedExercises) // Pass workout title
         }
+    }
+    
+    private func fetchTemplateNames() {
+        isLoading = true
+        let db = Firestore.firestore()
+        db.collection("templates").getDocuments { snapshot, error in
+                print("before loading turned off\(isLoading)")
+                isLoading = false
+                print("after loading turned off\(isLoading)")
+                if let error = error {
+                    print("Error fetching templates: \(error.localizedDescription)")
+                    return
+                }
+                if let snapshot = snapshot {
+                    templateNames = snapshot.documents.map { $0.documentID.replacingOccurrences(of: "_", with: " ").capitalized }
+                }
+        }
+        
     }
     
     private func fetchTemplate(name: String, completion: @escaping ([Exercise]) -> Void) {

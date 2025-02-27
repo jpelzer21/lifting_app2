@@ -37,7 +37,7 @@ struct CalendarView: View {
                     ForEach(1...12, id: \.self) { month in
                         if let days = months[month] {
                             VStack(alignment: .leading) {
-                                Text("\(monthName(for: month)) \(year)")
+                                Text(verbatim: "\(monthName(for: month)) \(year)")
                                     .font(.title2)
                                     .bold()
                                     .padding(.horizontal)
@@ -69,6 +69,7 @@ struct CalendarView: View {
                                             .clipShape(Circle())
                                             .onTapGesture {
                                                 selectedDate = date
+                                                print(date)
                                             }
                                     }
                                 }
@@ -79,14 +80,15 @@ struct CalendarView: View {
                 }
                 .padding()
                 .onAppear {
+                    print("View Appeared")
                     fetchWorkoutDates()
                     DispatchQueue.main.async {
-                        proxy.scrollTo(currentMonth, anchor: .top)
+                        proxy.scrollTo(currentMonth, anchor: .center)
                     }
                 }
             }
         }
-        .navigationTitle("\(year) Calendar")
+        .navigationTitle(Text(verbatim: "\(year) Calendar"))
     }
 
     private func fetchWorkoutDates() {

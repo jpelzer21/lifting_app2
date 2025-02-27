@@ -14,11 +14,20 @@ struct WorkoutView: View {
         NavigationView {
             ScrollView{
                 VStack (alignment: .center){
-                    Text(workoutTitle)
-                        .font(.largeTitle)
-                        .fontWeight(.medium)
-                        .multilineTextAlignment(.center)
-                        .padding()
+                    if workoutTitle == "Custom Workout" {
+                        TextField("Enter Title:", text: $workoutTitle)
+                            .font(.largeTitle)
+                            .fontWeight(.medium)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    } else {
+                        Text(workoutTitle)
+                            .font(.largeTitle)
+                            .fontWeight(.medium)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    }
                     
                     VStack {
                         ForEach($exercises, id: \.id) { $exercise in
