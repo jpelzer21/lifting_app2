@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct HomePageView: View {
     @State private var showWorkoutView = false
@@ -7,6 +8,8 @@ struct HomePageView: View {
     @State private var selectedWorkoutTitle: String = "Empty Workout"
     @State private var templateNames: [String] = []
     @State private var isLoading = false
+    @State private var showProfileView = false
+    @State private var userID: String? = Auth.auth().currentUser?.uid
     
     
     var body: some View {
@@ -18,6 +21,8 @@ struct HomePageView: View {
             } else {
                 VStack {
                     Spacer()
+                    Text("Templates:")
+                        .font(.title2)
                     ForEach(templateNames, id: \.self) { template in
                         Button(template) {
                             selectedWorkoutTitle = template
@@ -38,11 +43,7 @@ struct HomePageView: View {
                         }
                     }
                     .homeButtonStyle()
-                    
-                    //test button
-//                    Button("test") {
-//                    }
-//                    .homeButtonStyle()
+                    .padding(50)
                     Spacer()
                 }
                 
@@ -53,18 +54,31 @@ struct HomePageView: View {
             fetchTemplateNames()
         }
         .navigationTitle("Home")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showProfileView.toggle()
+                }) {
+                    Image(systemName: "person.circle")
+                        .font(.title)
+                        .foregroundColor(.pink)
+                }
+            }
+        }
         .fullScreenCover(isPresented: $showWorkoutView) {
             WorkoutView(workoutTitle: $selectedWorkoutTitle, exercises: $selectedExercises) // Pass workout title
+        }
+        .fullScreenCover(isPresented: $showProfileView) {
+            ProfileView()
         }
     }
     
     private func fetchTemplateNames() {
-        isLoading = true
-        let db = Firestore.firestore()
-        db.collection("templates").getDocuments { snapshot, error in
-                print("before loading turned off\(isLoading)")
+        guard let userID = userID else { return }
+            isLoading = true
+            let db = Firestore.firestore()
+            db.collection("users").document(userID).collection("templates").getDocuments { snapshot, error in
                 isLoading = false
-                print("after loading turned off\(isLoading)")
                 if let error = error {
                     print("Error fetching templates: \(error.localizedDescription)")
                     return
@@ -72,25 +86,24 @@ struct HomePageView: View {
                 if let snapshot = snapshot {
                     templateNames = snapshot.documents.map { $0.documentID.replacingOccurrences(of: "_", with: " ").capitalized }
                 }
-        }
+            }
         
     }
     
     private func fetchTemplate(name: String, completion: @escaping ([Exercise]) -> Void) {
-        let db = Firestore.firestore()
-        let workoutRef = db.collection("templates").document(name.lowercased().replacingOccurrences(of: " ", with: "_"))
+        guard let userID = userID else { return }
+            let db = Firestore.firestore()
+            let templateRef = db.collection("users").document(userID).collection("templates").document(name.lowercased().replacingOccurrences(of: " ", with: "_"))
 
-        workoutRef.getDocument { (document, error) in
+            templateRef.getDocument { (document, error) in
                 if let error = error {
                     print("Error loading template: \(error.localizedDescription)")
-                    completion([]) // Return an empty array if there's an error
+                    completion([])
                     return
                 }
 
                 if let document = document, document.exists, let data = document.data(),
                    let exercisesData = data["exercises"] as? [[String: Any]] {
-                    
-                    // Parse the exercises data into [Exercise]
                     let exercises = exercisesData.compactMap { exerciseDict -> Exercise? in
                         guard let name = exerciseDict["name"] as? String,
                               let setsData = exerciseDict["sets"] as? [[String: Any]] else { return nil }
@@ -101,13 +114,11 @@ struct HomePageView: View {
                                   let reps = setDict["reps"] as? Int else { return nil }
                             return ExerciseSet(number: setNum, weight: weight, reps: reps)
                         }
-
                         return Exercise(name: name, sets: sets)
                     }
-                    
-                    completion(exercises) // Return the fetched exercises
+                    completion(exercises)
                 } else {
-                    completion([]) // Return an empty array if the document doesn't exist or data is invalid
+                    completion([])
                 }
             }
     }

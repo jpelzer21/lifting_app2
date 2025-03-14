@@ -1,16 +1,16 @@
 import SwiftUI
 import Charts
 import FirebaseFirestore
-
+import FirebaseAuth
 
 struct GraphView: View {
     @State private var exerciseSets: [ExerciseSet] = []
-    @State private var selectedMetric: Metric = .weight
+    @State private var selectedMetric: Metric = .volume
     let exerciseName: String
-    let linearGradient = LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.4),
-                                                                    Color.accentColor.opacity(0)]),
-                                                                    startPoint: .top,
-                                                                    endPoint: .bottom)
+//    let linearGradient = LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.4),
+//                                                                    Color.accentColor.opacity(0)]),
+//                                                                    startPoint: .top,
+//                                                                    endPoint: .bottom)
     
     enum Metric: String, CaseIterable {
             case weight = "Weight"
@@ -28,7 +28,7 @@ struct GraphView: View {
         case .volume:
             maxValue = exerciseSets.map { $0.weight * Double($0.reps) }.max() ?? 0
         }
-    return maxValue * 1.1 // Double the maximum value for better scaling
+    return maxValue * 1.25 // Double the maximum value for better scaling
     }
     
     private var minYAxisValue: Double {
@@ -41,7 +41,7 @@ struct GraphView: View {
         case .volume:
             minValue = exerciseSets.map { $0.weight * Double($0.reps) }.min() ?? 0
         }
-    return minValue
+        return minValue
     }
     
 
@@ -58,19 +58,37 @@ struct GraphView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding()
-            if exerciseName.isEmpty {
+            if exerciseSets.isEmpty {
                 Text("Loading data...")
                     .foregroundColor(.gray)
                     .padding()
             } else {
-                Chart(exerciseSets) { set in
-                    PointMark(
-                        x: .value("Date", set.date),
-                        y: .value(selectedMetric == .weight ? "Weight" : selectedMetric == .reps ? "Reps" : "Volume",
-                                  selectedMetric == .weight ? set.weight : selectedMetric == .reps ? Double(set.reps) : set.weight * Double(set.reps))
-                    )
-                    .symbol(.circle)
-                    .interpolationMethod(.catmullRom)
+                Chart {
+                    ForEach(exerciseSets) { set in
+                        PointMark(
+                            x: .value("Date", set.date),
+                            y: .value(selectedMetric.rawValue,
+                                      selectedMetric == .weight ? set.weight :
+                                      selectedMetric == .reps ? Double(set.reps) :
+                                      set.weight * Double(set.reps))
+                        )
+                        .symbol(.circle)
+                        .opacity(1/Double(set.number))
+                        .foregroundStyle(Color.pink)
+                    }
+                    
+                    let firstSets = exerciseSets.filter { $0.number == 1 }
+                    ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
+                            LineMark(
+                                x: .value("Date", set.date),
+                                y: .value(selectedMetric.rawValue,
+                                          selectedMetric == .weight ? set.weight :
+                                          selectedMetric == .reps ? Double(set.reps) :
+                                          set.weight * Double(set.reps))
+                            )
+                            .foregroundStyle(Color.pink)
+                            .lineStyle(StrokeStyle(lineWidth: 2)) // Dashed line for clarity
+                    }
                     
                 }
                 .chartXAxis {
@@ -81,25 +99,30 @@ struct GraphView: View {
                 .chartYAxis {
                     AxisMarks(position: .trailing)
                 }
-                .chartYScale(domain: minYAxisValue...maxYAxisValue) // Set dynamic y-axis range
-                    .frame(height: 300)
-                    .padding()
+                .chartYScale(domain: minYAxisValue...maxYAxisValue)
                 .frame(height: 300)
                 .padding()
+
             }
         }
         .onAppear {
             fetchSets(name: exerciseName)
         }
     }
-
+    
     private func fetchSets(name: String) {
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("Error: User not logged in")
+            return
+        }
         let db = Firestore.firestore()
-        let exerciseRef = db.collection("exercises").document(name).collection("sets")
+        let exerciseRef = db.collection("users").document(userID)
+            .collection("exercises").document(name)
+            .collection("sets")
 
         exerciseRef.order(by: "date", descending: false).getDocuments { snapshot, error in
             if let error = error {
-                print("Error fetching bench press sets: \(error.localizedDescription)")
+                print("Error fetching sets: \(error.localizedDescription)")
                 return
             }
 
@@ -108,9 +131,10 @@ struct GraphView: View {
                     let data = doc.data()
                     guard let timestamp = data["date"] as? Timestamp,
                           let weight = data["weight"] as? Double,
-                          let reps = data["reps"] as? Int else { return nil }
+                          let reps = data["reps"] as? Int,
+                          let setNum = data["setNum"] as? Int else { return nil }
 
-                    return ExerciseSet(number: 0, weight: weight, reps: reps, date: timestamp.dateValue())
+                    return ExerciseSet(number: setNum, weight: weight, reps: reps, date: timestamp.dateValue())
                 }
             }
         }

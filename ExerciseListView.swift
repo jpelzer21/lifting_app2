@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct ExerciseListView: View {
     @State private var exercises: [String] = []
@@ -16,7 +17,7 @@ struct ExerciseListView: View {
         NavigationView {
             List(exercises, id: \..self) { exercise in
                 NavigationLink(destination: GraphView(exerciseName: exercise)) {
-                    Text(exercise)
+                    Text(exercise.replacingOccurrences(of: "_", with: " ").capitalized(with: .autoupdatingCurrent))
                 }
             }
             .navigationTitle("Exercises")
@@ -26,7 +27,11 @@ struct ExerciseListView: View {
     
     func fetchExercises() {
         let db = Firestore.firestore()
-        db.collection("exercises").getDocuments { snapshot, error in
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("Error: User not logged in")
+            return
+        }
+        db.collection("users").document(userID).collection("exercises").getDocuments { snapshot, error in
             if let error = error {
                 print("Error fetching exercises: \(error.localizedDescription)")
                 return

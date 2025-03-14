@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct WorkoutView: View {
 //    @State private var workoutTitle: String = "Workout Title"
@@ -7,6 +8,9 @@ struct WorkoutView: View {
     @Binding var exercises: [Exercise]
     @Environment(\.presentationMode) var presentationMode
     @State private var showingAlert = false
+    @State private var isEditingTitle: Bool = false
+    
+
     private let db = Firestore.firestore()
     
     
@@ -14,19 +18,24 @@ struct WorkoutView: View {
         NavigationView {
             ScrollView{
                 VStack (alignment: .center){
-                    if workoutTitle == "Custom Workout" {
-                        TextField("Enter Title:", text: $workoutTitle)
-                            .font(.largeTitle)
-                            .fontWeight(.medium)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    if isEditingTitle {
+                        TextField("Enter Title:", text: $workoutTitle, onCommit: {
+                            isEditingTitle = false
+                        })
+                        .font(.largeTitle)
+                        .fontWeight(.medium)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
                     } else {
                         Text(workoutTitle)
                             .font(.largeTitle)
                             .fontWeight(.medium)
                             .multilineTextAlignment(.center)
                             .padding()
+                            .onTapGesture {
+                                isEditingTitle = true
+                            }
                     }
                     
                     VStack {
@@ -85,7 +94,7 @@ struct WorkoutView: View {
                     primaryButton: .default(Text("Finish")) {
                         print("Workout Finished")
                         saveWorkoutAsTemplate()
-                        finishWorkout()
+                        saveExercises()
                         presentationMode.wrappedValue.dismiss()
                     },
                     secondaryButton: .cancel(Text("Stay"))
@@ -129,17 +138,20 @@ struct WorkoutView: View {
         return result
     }
     
-    private func finishWorkout() {
-        writeData()
-    }
     
-    private func writeData() {
+    private func saveExercises() {
+        
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("User not authenticated")
+            return
+        }
+        
         for exercise in exercises {
             // Define the document reference for the exercise
-            let exerciseRef = db.collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_"))
-            
-            // Check if the exercise document exists
-            exerciseRef.getDocument { (document, error) in
+            let exerciseRef = db.collection("users").document(userID).collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_"))
+                        
+                        // Check if the exercise document exists
+                        exerciseRef.getDocument { (document, error) in
                 if let error = error {
                     print("Error checking exercise document: \(error.localizedDescription)")
                     return
@@ -148,20 +160,19 @@ struct WorkoutView: View {
                 if let document = document, document.exists {
                     // If document exists, we don't need to add the name field
                     print("\(exercise.name) already exists in the database.")
-                } else {
-                    // If document doesn't exist, create it and add the name field
-                    let exerciseData: [String: Any] = [
-                        "name": exercise.name
-                    ]
-                    
-                    exerciseRef.setData(exerciseData) { error in
-                        if let error = error {
-                            print("Error adding name for \(exercise.name): \(error.localizedDescription)")
-                        } else {
-                            print("Name added for \(exercise.name)!")
-                        }
+                }
+                let exerciseData: [String: Any] = [
+                    "name": exercise.name
+                ]
+                
+                exerciseRef.setData(exerciseData) { error in
+                    if let error = error {
+                        print("Error adding name for \(exercise.name): \(error.localizedDescription)")
+                    } else {
+                        print("Name added for \(exercise.name)!")
                     }
                 }
+                
             }
             
             // Add the sets data as before
@@ -188,8 +199,37 @@ struct WorkoutView: View {
         }
     }
     
+    private func saveWorkout() {
+        guard let user = Auth.auth().currentUser else {
+            print("User not authenticated")
+            return
+        }
+
+        let workoutRef = db.collection("users").document(user.uid).collection("workouts")
+            .document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
+
+        let workoutData: [String: Any] = [
+            "title": workoutTitle,
+            "timestamp": Timestamp(date: Date())
+//            "weight": userWeight // User's weight at the time of the workout
+        ]
+
+        workoutRef.setData(workoutData) { error in
+            if let error = error {
+                print("Error saving workout: \(error.localizedDescription)")
+            } else {
+                print("Workout saved successfully!")
+            }
+        }
+    }
+    
     private func saveWorkoutAsTemplate() {
-        let workoutRef = db.collection("templates").document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("Error: User not logged in")
+            return
+        }
+        let workoutRef = db.collection("users").document(userID)
+            .collection("templates").document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
         var exercisesData: [[String: Any]] = []
         
         for exercise in exercises {
@@ -217,8 +257,13 @@ struct WorkoutView: View {
     }
     
     private func loadWorkoutTemplate() {
-        let workoutRef = db.collection("templates").document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
-
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("Error: User not logged in")
+            return
+        }
+        let workoutRef = db.collection("users").document(userID)
+            .collection("templates").document(workoutTitle.replacingOccurrences(of: "_", with: " ").capitalized(with: .autoupdatingCurrent))
+        
         workoutRef.getDocument { (document, error) in
             if let error = error {
                 print("Error loading template: \(error.localizedDescription)")
@@ -310,7 +355,14 @@ struct ExerciseView: View {
                         .opacity(exercise.allSetsCompleted ? 0.8 : 0.3)
                         .cornerRadius(8)
                     Button {
+                        generator.impactOccurred()
                         exercise.allSetsCompleted.toggle()
+                        exercise.sets = exercise.sets.map { set in
+                            var updatedSet = set
+                            updatedSet.isCompleted = exercise.allSetsCompleted
+                            return updatedSet
+                        }
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     } label: {
                         Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                     }
@@ -346,8 +398,9 @@ struct ExerciseView: View {
                                 .opacity((set.isCompleted || exercise.allSetsCompleted) ? 0.8 : 0.3)
                                 .cornerRadius(8)
                             Button {
-                                set.isCompleted.toggle()
                                 generator.impactOccurred()
+                                set.isCompleted.toggle()
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             } label: {
                                 Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                             }
@@ -363,8 +416,10 @@ struct ExerciseView: View {
                 Button("Add Set") {
                     generator.impactOccurred()
                     exercise.sets.append(ExerciseSet(
-                        number: exercise.sets.count + 1, weight: exercise.sets[exercise.sets.count-1].weight, reps: exercise.sets[exercise.sets.count-1].reps)
-                    )
+                        number: exercise.sets.count + 1,
+                        weight: exercise.sets[exercise.sets.count-1].weight,
+                        reps: exercise.sets[exercise.sets.count-1].reps
+                    ))
                 }
                 .customButtonStyle()
                 .tint(.green)
