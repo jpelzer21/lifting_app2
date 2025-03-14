@@ -15,14 +15,21 @@ struct ExerciseListView: View {
         
     var body: some View {
         NavigationView {
-            List(exercises, id: \..self) { exercise in
-                NavigationLink(destination: GraphView(exerciseName: exercise)) {
-                    Text(exercise.replacingOccurrences(of: "_", with: " ").capitalized(with: .autoupdatingCurrent))
+            if exercises.isEmpty{
+                VStack {
+                    Text("No exercises yet!")
+                    Text("Add an exercise by making a template!")
                 }
+            } else {
+                List(exercises, id: \..self) { exercise in
+                    NavigationLink(destination: GraphView(exerciseName: exercise)) {
+                        Text(exercise.replacingOccurrences(of: "_", with: " ").capitalized(with: .autoupdatingCurrent))
+                    }
+                }
+                .navigationTitle("Exercises")
             }
-            .navigationTitle("Exercises")
-            .onAppear(perform: fetchExercises)
         }
+        .onAppear(perform: fetchExercises)
     }
     
     func fetchExercises() {

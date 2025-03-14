@@ -46,6 +46,7 @@ struct GraphView: View {
     
 
     var body: some View {
+        let firstSets = exerciseSets.filter { $0.number == 1 }
         VStack {
             Text(exerciseName.replacingOccurrences(of: "_", with: " ").capitalized)
                 .font(.largeTitle)
@@ -77,7 +78,7 @@ struct GraphView: View {
                         .foregroundStyle(Color.pink)
                     }
                     
-                    let firstSets = exerciseSets.filter { $0.number == 1 }
+                    
                     ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
                             LineMark(
                                 x: .value("Date", set.date),
@@ -103,6 +104,9 @@ struct GraphView: View {
                 .frame(height: 300)
                 .padding()
 
+            }
+            if firstSets.count == 1 {
+                Text("Not enough sets to display acurate graph")
             }
         }
         .onAppear {

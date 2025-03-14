@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct CalendarView: View {
     @State private var selectedDate: Date = Date()
@@ -92,8 +93,13 @@ struct CalendarView: View {
     }
 
     private func fetchWorkoutDates() {
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("User not authenticated")
+            return
+        }
+        
         let db = Firestore.firestore()
-        let exercisesRef = db.collection("exercises")
+        let exercisesRef = db.collection("users").document(userID).collection("exercises")
 
         exercisesRef.getDocuments { snapshot, error in
             if let error = error {

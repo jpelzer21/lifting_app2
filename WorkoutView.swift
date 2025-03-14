@@ -48,7 +48,6 @@ struct WorkoutView: View {
                         }
                         .listRowBackground(Color(UIColor.systemBackground))
                         .listRowSeparator(.hidden)
-                        
                         HStack {
                             Spacer()
                             Button("Add Exercise") {
@@ -94,6 +93,7 @@ struct WorkoutView: View {
                     primaryButton: .default(Text("Finish")) {
                         print("Workout Finished")
                         saveWorkoutAsTemplate()
+//                        saveWorkout()
                         saveExercises()
                         presentationMode.wrappedValue.dismiss()
                     },
@@ -199,29 +199,31 @@ struct WorkoutView: View {
         }
     }
     
-    private func saveWorkout() {
-        guard let user = Auth.auth().currentUser else {
-            print("User not authenticated")
-            return
-        }
-
-        let workoutRef = db.collection("users").document(user.uid).collection("workouts")
-            .document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
-
-        let workoutData: [String: Any] = [
-            "title": workoutTitle,
-            "timestamp": Timestamp(date: Date())
-//            "weight": userWeight // User's weight at the time of the workout
-        ]
-
-        workoutRef.setData(workoutData) { error in
-            if let error = error {
-                print("Error saving workout: \(error.localizedDescription)")
-            } else {
-                print("Workout saved successfully!")
-            }
-        }
-    }
+//    private func saveWorkout() {
+//        guard let user = Auth.auth().currentUser else {
+//            print("User not authenticated")
+//            return
+//        }
+//
+//        let workoutRef = db.collection("users").document(user.uid).collection("workouts")
+//            .document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
+//
+//        print("Saving workout with title: \(workoutTitle)")
+//        
+//        let workoutData: [String: Any] = [
+//            "title": workoutTitle,
+//            "timestamp": Timestamp(date: Date())
+////            "weight": userWeight // User's weight at the time of the workout
+//        ]
+//
+//        workoutRef.setData(workoutData) { error in
+//            if let error = error {
+//                print("Error saving workout: \(error.localizedDescription)")
+//            } else {
+//                print("Workout saved successfully!")
+//            }
+//        }
+//    }
     
     private func saveWorkoutAsTemplate() {
         guard let userID = Auth.auth().currentUser?.uid else {
@@ -289,10 +291,10 @@ struct WorkoutView: View {
             }
         }
     }
-    
-    
-    
 }
+
+
+
 
 struct ExerciseView: View {
     @Binding var exercise: Exercise
@@ -311,7 +313,7 @@ struct ExerciseView: View {
     var body: some View {
         
         
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Button {
                 } label: {
@@ -337,7 +339,7 @@ struct ExerciseView: View {
                         secondaryButton: .cancel(Text("Cancel"))
                     )
                 }
-            }
+            }.padding(.bottom, 5)
             HStack{
                 Text("set").frame(width: 75).multilineTextAlignment(.center)
                     .frame(width: 50)
@@ -367,7 +369,7 @@ struct ExerciseView: View {
                         Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
                     }
                 }
-            }
+            }.padding(.bottom, 5)
             ForEach($exercise.sets) { $set in
                 
                 ZStack {
@@ -434,8 +436,9 @@ struct ExerciseView: View {
                 .tint(.red)
                 .disabled(exercise.sets.isEmpty)
                 Spacer()
-            }
+            }.padding(.top, 5)
         }
+        .ignoresSafeArea()
         .padding()
     }
 }
