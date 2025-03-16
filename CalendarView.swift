@@ -11,7 +11,7 @@ struct CalendarView: View {
     @State private var workoutDates: Set<Date> = []
     
     // Track scroll position
-    @State private var scrollViewProxy: ScrollViewProxy?
+//    @State private var scrollViewProxy: ScrollViewProxy?
     private let currentMonth: Int = Calendar.current.component(.month, from: Date())
 
     private var months: [Int: [Date]] {
@@ -59,7 +59,7 @@ struct CalendarView: View {
 
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 5) {
                                     ForEach(0..<weekday, id: \.self) { _ in
-                                        Text("")
+                                        Spacer()
                                             .frame(width: 40, height: 40)
                                     }
                                     
@@ -92,6 +92,7 @@ struct CalendarView: View {
         .navigationTitle(Text(verbatim: "\(year) Calendar"))
     }
 
+
     private func fetchWorkoutDates() {
         guard let userID = Auth.auth().currentUser?.uid else {
             print("User not authenticated")
@@ -99,45 +100,41 @@ struct CalendarView: View {
         }
         
         let db = Firestore.firestore()
-        let exercisesRef = db.collection("users").document(userID).collection("exercises")
+        let workoutsRef = db.collection("users").document(userID).collection("workouts")
 
-        exercisesRef.getDocuments { snapshot, error in
+        workoutsRef.getDocuments { snapshot, error in
             if let error = error {
-                print("Error fetching exercises: \(error.localizedDescription)")
+                print("Error fetching workouts: \(error.localizedDescription)")
                 return
             }
             
-            guard let snapshot = snapshot else { return }
+            guard let snapshot = snapshot else {
+                print("No workout data found")
+                return
+            }
             
             var fetchedDates: Set<Date> = []
             
-            let group = DispatchGroup()
-            
             for document in snapshot.documents {
-                let setsRef = exercisesRef.document(document.documentID).collection("sets")
-                group.enter()
+                let data = document.data()
                 
-                setsRef.getDocuments { setSnapshot, setError in
-                    if let setError = setError {
-                        print("Error fetching sets: \(setError.localizedDescription)")
-                    } else if let setSnapshot = setSnapshot {
-                        for setDoc in setSnapshot.documents {
-                            if let timestamp = setDoc.data()["date"] as? Timestamp {
-                                let workoutDate = calendar.startOfDay(for: timestamp.dateValue()) // Normalize time
-                                fetchedDates.insert(workoutDate)
-                            }
-                        }
-                    }
-                    group.leave()
+                if let timestamp = data["timestamp"] as? Timestamp {
+                    let workoutDate = timestamp.dateValue() // Convert Firestore Timestamp to Date
+                    let normalizedDate = calendar.startOfDay(for: workoutDate) // Normalize to start of day
+                    fetchedDates.insert(normalizedDate)
+                    print("Fetched workout date: \(normalizedDate)")
+                } else {
+                    print("No valid date found in document: \(document.documentID)")
                 }
             }
             
-            group.notify(queue: .main) {
+            DispatchQueue.main.async {
                 self.workoutDates = fetchedDates
+                print("Workout dates updated: \(self.workoutDates)")
             }
         }
     }
-
+    
     private func monthName(for month: Int) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMMM"

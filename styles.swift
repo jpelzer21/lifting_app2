@@ -38,15 +38,11 @@ struct CustomButtonStyle: ViewModifier {
 struct HomeButtonStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.roundedRectangle)
-            .saturation(0.9)
-            .padding(5)
-            .font(.title)
-            .background(.pink)
+            .background(Color.pink)
             .foregroundColor(.white)
-            .cornerRadius(10)
-            .shadow(radius: 10)
+            .font(.title3)
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
+            .padding(.bottom, 30)
     }
 }
-

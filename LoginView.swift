@@ -12,6 +12,7 @@ import FirebaseFirestore
 struct LoginView: View {
     @State private var firstName = ""
     @State private var lastName = ""
+    @State private var weight = ""
     @State private var email = ""
     @State private var password = ""
     @State private var errorMessage: String?
@@ -41,6 +42,10 @@ struct LoginView: View {
                     .autocapitalization(.words)
                     .padding(.horizontal)
                 TextField("Last Name", text: $lastName)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .autocapitalization(.words)
+                    .padding(.horizontal)
+                TextField("Weight", text: $weight)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .autocapitalization(.words)
                     .padding(.horizontal)
@@ -92,6 +97,9 @@ struct LoginView: View {
                 Auth.auth().removeStateDidChangeListener(authListener)
             }
         }
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
         .padding()
     }
     
@@ -131,6 +139,7 @@ struct LoginView: View {
             "uid": user.uid,
             "firstName": firstName,
             "lastName": lastName,
+            "weight": weight,
             "email": user.email ?? "",
             "createdAt": Timestamp(date: Date())
         ]) { error in

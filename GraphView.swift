@@ -7,10 +7,6 @@ struct GraphView: View {
     @State private var exerciseSets: [ExerciseSet] = []
     @State private var selectedMetric: Metric = .volume
     let exerciseName: String
-//    let linearGradient = LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.4),
-//                                                                    Color.accentColor.opacity(0)]),
-//                                                                    startPoint: .top,
-//                                                                    endPoint: .bottom)
     
     enum Metric: String, CaseIterable {
             case weight = "Weight"
@@ -19,31 +15,14 @@ struct GraphView: View {
         }
     
     private var maxYAxisValue: Double {
-        let maxValue: Double
-        switch selectedMetric {
-        case .weight:
-            maxValue = exerciseSets.map { $0.weight }.max() ?? 0
-        case .reps:
-            maxValue = Double(exerciseSets.map { $0.reps }.max() ?? 0)
-        case .volume:
-            maxValue = exerciseSets.map { $0.weight * Double($0.reps) }.max() ?? 0
-        }
-    return maxValue * 1.25 // Double the maximum value for better scaling
+        let maxValue = exerciseSets.map { metricValue(for: $0) }.max() ?? 0
+        return maxValue * 1.25
     }
-    
+
     private var minYAxisValue: Double {
-        let minValue: Double
-        switch selectedMetric {
-        case .weight:
-            minValue = exerciseSets.map { $0.weight }.min() ?? 0
-        case .reps:
-            minValue = Double(exerciseSets.map { $0.reps }.min() ?? 0)
-        case .volume:
-            minValue = exerciseSets.map { $0.weight * Double($0.reps) }.min() ?? 0
-        }
-        return minValue
+        let minValue = exerciseSets.map { metricValue(for: $0) }.min() ?? 0
+        return max(0, minValue-(minValue*0.25))
     }
-    
 
     var body: some View {
         let firstSets = exerciseSets.filter { $0.number == 1 }
@@ -59,58 +38,68 @@ struct GraphView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding()
+            
             if exerciseSets.isEmpty {
-                Text("Loading data...")
-                    .foregroundColor(.gray)
-                    .padding()
+                VStack {
+                    ProgressView("Loading exercise data...")
+                        .padding()
+                    Text("No recorded sets for this exercise.")
+                        .foregroundColor(.gray)
+                }
             } else {
-                Chart {
-                    ForEach(exerciseSets) { set in
-                        PointMark(
-                            x: .value("Date", set.date),
-                            y: .value(selectedMetric.rawValue,
-                                      selectedMetric == .weight ? set.weight :
-                                      selectedMetric == .reps ? Double(set.reps) :
-                                      set.weight * Double(set.reps))
-                        )
-                        .symbol(.circle)
-                        .opacity(1/Double(set.number))
-                        .foregroundStyle(Color.pink)
-                    }
-                    
-                    
-                    ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
-                            LineMark(
+                if firstSets.count > 1 {
+                    Chart {
+                        ForEach(exerciseSets) { set in
+                            PointMark(
                                 x: .value("Date", set.date),
                                 y: .value(selectedMetric.rawValue,
                                           selectedMetric == .weight ? set.weight :
                                           selectedMetric == .reps ? Double(set.reps) :
                                           set.weight * Double(set.reps))
                             )
+                            .symbol(.circle)
+                            .opacity(1/Double(set.number))
                             .foregroundStyle(Color.pink)
-                            .lineStyle(StrokeStyle(lineWidth: 2)) // Dashed line for clarity
+                        }
+                        
+                        ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
+                                LineMark(
+                                    x: .value("Date", set.date),
+                                    y: .value(selectedMetric.rawValue, metricValue(for: set))
+                                )
+                                .foregroundStyle(Color.pink)
+                                .lineStyle(StrokeStyle(lineWidth: 2)) // Dashed line for clarity
+                        }
+                        
                     }
-                    
-                }
-                .chartXAxis {
-                    AxisMarks(position: .bottom) {
-                        AxisValueLabel(format: .dateTime.month().day())
+                    .chartXAxis {
+                        AxisMarks(position: .bottom) {
+                            AxisValueLabel(format: .dateTime.month().day())
+                        }
                     }
+                    .chartYAxis {
+                        AxisMarks(position: .trailing)
+                    }
+                    .chartYScale(domain: minYAxisValue...maxYAxisValue)
+                    .frame(height: 300)
+                    .padding()
+                } else {
+                    Text("Not enough data to display a trend.")
+                        .foregroundColor(.gray)
+                        .padding()
                 }
-                .chartYAxis {
-                    AxisMarks(position: .trailing)
-                }
-                .chartYScale(domain: minYAxisValue...maxYAxisValue)
-                .frame(height: 300)
-                .padding()
-
-            }
-            if firstSets.count == 1 {
-                Text("Not enough sets to display acurate graph")
             }
         }
         .onAppear {
             fetchSets(name: exerciseName)
+        }
+    }
+    
+    private func metricValue(for set: ExerciseSet) -> Double {
+        switch selectedMetric {
+        case .weight: return set.weight
+        case .reps: return Double(set.reps)
+        case .volume: return set.weight * Double(set.reps)
         }
     }
     
@@ -124,23 +113,21 @@ struct GraphView: View {
             .collection("exercises").document(name)
             .collection("sets")
 
-        exerciseRef.order(by: "date", descending: false).getDocuments { snapshot, error in
-            if let error = error {
-                print("Error fetching sets: \(error.localizedDescription)")
+        exerciseRef.order(by: "date").getDocuments { snapshot, error in
+            guard let snapshot = snapshot, error == nil else {
+                print("Error fetching sets: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
-
-            if let snapshot = snapshot {
-                self.exerciseSets = snapshot.documents.compactMap { doc in
-                    let data = doc.data()
-                    guard let timestamp = data["date"] as? Timestamp,
-                          let weight = data["weight"] as? Double,
-                          let reps = data["reps"] as? Int,
-                          let setNum = data["setNum"] as? Int else { return nil }
-
-                    return ExerciseSet(number: setNum, weight: weight, reps: reps, date: timestamp.dateValue())
-                }
+            self.exerciseSets = snapshot.documents.compactMap { doc in
+                let data = doc.data()
+                return ExerciseSet(
+                    number: data["setNum"] as? Int ?? 1,
+                    weight: data["weight"] as? Double ?? 0,
+                    reps: data["reps"] as? Int ?? 0,
+                    date: (data["date"] as? Timestamp)?.dateValue() ?? Date()
+                )
             }
         }
     }
+    
 }

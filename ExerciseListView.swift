@@ -15,36 +15,63 @@ struct ExerciseListView: View {
         
     var body: some View {
         NavigationView {
-            if exercises.isEmpty{
+            if isLoading {
                 VStack {
+                    ProgressView("Loading...")
+                        .padding()
+                }
+            } else if exercises.isEmpty{
+                VStack(alignment: .center) {
+                    Image(systemName: "dumbbell.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 10)
+
                     Text("No exercises yet!")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+
                     Text("Add an exercise by making a template!")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
                 }
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 100)
             } else {
-                List(exercises, id: \..self) { exercise in
-                    NavigationLink(destination: GraphView(exerciseName: exercise)) {
-                        Text(exercise.replacingOccurrences(of: "_", with: " ").capitalized(with: .autoupdatingCurrent))
-                    }
+                ScrollView {
+                    VStack {
+                        ForEach(exercises, id: \.self) { exercise in
+                            NavigationLink(destination: GraphView(exerciseName: exercise)) {
+                                ExerciseCard(exerciseName: exercise)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }.navigationTitle("Exercises")
                 }
-                .navigationTitle("Exercises")
             }
         }
         .onAppear(perform: fetchExercises)
     }
     
     func fetchExercises() {
-        let db = Firestore.firestore()
         guard let userID = Auth.auth().currentUser?.uid else {
             print("Error: User not logged in")
             return
         }
+        
+        let db = Firestore.firestore()
         db.collection("users").document(userID).collection("exercises").getDocuments { snapshot, error in
-            if let error = error {
-                print("Error fetching exercises: \(error.localizedDescription)")
-                return
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error fetching exercises: \(error.localizedDescription)")
+                    self.exercises = [] // Clear in case of failure
+                } else {
+                    self.exercises = snapshot?.documents.map { $0.documentID } ?? []
+                }
+                self.isLoading = false
             }
-            exercises = snapshot?.documents.compactMap { $0.documentID } ?? []
-            isLoading = false
         }
     }
 }

@@ -3,36 +3,32 @@ import FirebaseFirestore
 import FirebaseAuth
 
 struct WorkoutView: View {
-//    @State private var workoutTitle: String = "Workout Title"
     @Binding var workoutTitle: String
     @Binding var exercises: [Exercise]
     @Environment(\.presentationMode) var presentationMode
     @State private var showingAlert = false
     @State private var isEditingTitle: Bool = false
-    
 
     private let db = Firestore.firestore()
     
-    
+
     var body: some View {
         NavigationView {
-            ScrollView{
-                VStack (alignment: .center){
+            ScrollView {
+                VStack(alignment: .center) {
                     if isEditingTitle {
                         TextField("Enter Title:", text: $workoutTitle, onCommit: {
-                            isEditingTitle = false
+                            if !workoutTitle.trimmingCharacters(in: .whitespaces).isEmpty {
+                                isEditingTitle = false
+                            }
                         })
                         .font(.largeTitle)
                         .fontWeight(.medium)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .customTextFieldStyle()
                     } else {
                         Text(workoutTitle)
                             .font(.largeTitle)
                             .fontWeight(.medium)
-                            .multilineTextAlignment(.center)
-                            .padding()
                             .onTapGesture {
                                 isEditingTitle = true
                             }
@@ -78,6 +74,9 @@ struct WorkoutView: View {
                     
                 }
                 .onAppear {
+                    if workoutTitle == "New Template" || workoutTitle == "New Workout" {
+                        isEditingTitle = true
+                    }
                     loadWorkoutTemplate()
                 }
             }
@@ -93,7 +92,7 @@ struct WorkoutView: View {
                     primaryButton: .default(Text("Finish")) {
                         print("Workout Finished")
                         saveWorkoutAsTemplate()
-//                        saveWorkout()
+                        saveWorkout()
                         saveExercises()
                         presentationMode.wrappedValue.dismiss()
                     },
@@ -178,7 +177,7 @@ struct WorkoutView: View {
             // Add the sets data as before
             for set in exercise.sets {
                 if set.isCompleted {
-                    let newSetRef = exerciseRef.collection("sets").document() // Auto-generate a set ID
+                    let newSetRef = exerciseRef.collection("sets").document() // Generates a random ID
                     
                     let setData: [String: Any] = [
                         "date": Timestamp(date: Date()),
@@ -199,31 +198,41 @@ struct WorkoutView: View {
         }
     }
     
-//    private func saveWorkout() {
-//        guard let user = Auth.auth().currentUser else {
-//            print("User not authenticated")
-//            return
-//        }
-//
-//        let workoutRef = db.collection("users").document(user.uid).collection("workouts")
-//            .document(workoutTitle.lowercased().replacingOccurrences(of: " ", with: "_"))
-//
-//        print("Saving workout with title: \(workoutTitle)")
-//        
-//        let workoutData: [String: Any] = [
-//            "title": workoutTitle,
-//            "timestamp": Timestamp(date: Date())
-////            "weight": userWeight // User's weight at the time of the workout
-//        ]
-//
-//        workoutRef.setData(workoutData) { error in
-//            if let error = error {
-//                print("Error saving workout: \(error.localizedDescription)")
-//            } else {
-//                print("Workout saved successfully!")
-//            }
-//        }
-//    }
+    private func saveWorkout() {
+        guard let user = Auth.auth().currentUser else {
+            print("User not authenticated")
+            return
+        }
+
+        let workoutRef = db.collection("users").document(user.uid).collection("workouts").document() // Generates a random ID
+
+        print("Saving workout with title: \(workoutTitle)")
+        
+        // Filter exercises to include only those with at least one completed set
+        let completedExercises = exercises
+            .filter { !$0.sets.isEmpty } // Only keep exercises that have at least one set
+            .map { $0.name } // Store only exercise names
+
+        // If no exercises have sets, don't save the workout
+        guard !completedExercises.isEmpty else {
+            print("Workout not saved because no exercises contain sets.")
+            return
+        }
+        
+        let workoutData: [String: Any] = [
+            "title": workoutTitle,
+            "timestamp": Timestamp(date: Date()),
+            "exercises": exercises.map { $0.name }
+        ]
+
+        workoutRef.setData(workoutData) { error in
+            if let error = error {
+                print("Error saving workout: \(error.localizedDescription)")
+            } else {
+                print("Workout saved successfully with ID: \(workoutRef.documentID)")
+            }
+        }
+    }
     
     private func saveWorkoutAsTemplate() {
         guard let userID = Auth.auth().currentUser?.uid else {
@@ -245,11 +254,16 @@ struct WorkoutView: View {
             }
             let exerciseData: [String: Any] = [
                 "name": exercise.name,
+                "lastSetCompleted": Timestamp(date: Date()),
                 "sets": setsData
             ]
             exercisesData.append(exerciseData)
         }
-        workoutRef.setData(["exercises": exercisesData]) { error in
+        
+        workoutRef.setData([
+            "exercises": exercisesData,
+            "lastEdited": Timestamp(date: Date())
+        ], merge: true) { error in
             if let error = error {
                 print("Error saving template: \(error.localizedDescription)")
             } else {
@@ -383,7 +397,7 @@ struct ExerciseView: View {
                         Text("\(set.number)")
                             .frame(width: 50)
                         Spacer()
-                        TextField("Weight", value: $set.weight, formatter: NumberFormatter())
+                        TextField("Weight", value: $set.weight, formatter: doubleFormatter)
                             .customTextFieldStyle()
                             .keyboardType(.decimalPad)
                             .frame(width: 75)

@@ -11,6 +11,7 @@ import FirebaseFirestore
 
 struct ProfileView: View {
     @State private var userName: String = "Loading..."
+    @State private var weight: String = "Loading..."
     @State private var userEmail: String = "Loading..."
     @Environment(\.presentationMode) var presentationMode
     
@@ -25,6 +26,10 @@ struct ProfileView: View {
                 
                 Text(userName)
                     .font(.title)
+                    .fontWeight(.bold)
+                
+                Text("Weight: \(weight)")
+                    .font(.subheadline)
                     .fontWeight(.bold)
                 
                 Text(userEmail)
@@ -68,6 +73,7 @@ struct ProfileView: View {
                 let first = data["firstName"] as? String ?? "No "
                 let last = data["lastName"] as? String ?? "Name"
                 userName = "\(first) \(last)"
+                weight = data["weight"] as? String ?? "0"
             }
         }
     }
