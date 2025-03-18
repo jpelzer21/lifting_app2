@@ -161,10 +161,13 @@ struct WorkoutView: View {
                     print("\(exercise.name) already exists in the database.")
                 }
                 let exerciseData: [String: Any] = [
-                    "name": exercise.name
+                    "name": exercise.name,
+                    "lastSetDate": Timestamp(date: Date()),
+                    "setCount": FieldValue.increment(Int64(exercise.sets.filter { $0.isCompleted }.count))
                 ]
+                            
                 
-                exerciseRef.setData(exerciseData) { error in
+                exerciseRef.setData(exerciseData, merge: true) { error in
                     if let error = error {
                         print("Error adding name for \(exercise.name): \(error.localizedDescription)")
                     } else {

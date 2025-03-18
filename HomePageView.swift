@@ -82,7 +82,7 @@ struct HomePageView: View {
                                         }
                                     )
                                 }
-                            }.padding(.leading, 20)
+                            }.padding(.leading, 20).padding(.vertical, 10)
                         }
                     } else {
                         VStack {
@@ -137,7 +137,7 @@ struct HomePageView: View {
                             .transition(.opacity) // Fade animation
 //                            .animation(.easeInOut(duration: 0.3), value: template)
                         }
-                    }.padding(.leading, 20)
+                    }.padding(.leading, 20).padding(.vertical, 10)
                 }
                 
                 Spacer()

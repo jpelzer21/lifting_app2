@@ -9,12 +9,14 @@
 import SwiftUI
 
 struct TemplateCard: View {
+    @Environment(\.colorScheme) var colorScheme
     let templateName: String
     let exercises: [Exercise]
     let showDeleteButton: Bool
     let onTap: () -> Void
     let onDelete: () -> Void
     @State var showingAlert: Bool = false
+    
 
     var body: some View {
         Button(action: onTap) {
@@ -79,9 +81,9 @@ struct TemplateCard: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemGray6))
+            .background(colorScheme == .dark ? Color(.systemGray6) : .white)
             .cornerRadius(12)
-            .shadow(radius: 2)
+            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -33,6 +33,9 @@ struct ContentView: View {
             }
 //            .badge("12")
             .tag(1)
+            .navigationBarTitleDisplayMode(.inline)
+
+
             
             
             NavigationStack() {
@@ -47,6 +50,7 @@ struct ContentView: View {
         }
         .tint(.pink)
         .onAppear(perform: {
+            
             UITabBar.appearance().unselectedItemTintColor = .systemBrown
             UITabBarItem.appearance().badgeColor = .systemPink
             UITabBar.appearance().backgroundColor = .systemGray4.withAlphaComponent(0.4)
