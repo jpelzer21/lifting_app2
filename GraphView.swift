@@ -32,7 +32,8 @@ struct GraphView: View {
                 .font(.largeTitle)
                 .bold()
                 .padding()
-                        
+            
+            
             Picker("Metric", selection: $selectedMetric) {
                 ForEach(Metric.allCases, id: \.self) { metric in
                     Text(metric.rawValue).tag(metric)

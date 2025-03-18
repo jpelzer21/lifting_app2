@@ -163,7 +163,7 @@ struct WorkoutView: View {
                 let exerciseData: [String: Any] = [
                     "name": exercise.name,
                     "lastSetDate": Timestamp(date: Date()),
-                    "setCount": FieldValue.increment(Int64(exercise.sets.filter { $0.isCompleted }.count))
+                    "setCount": exercise.allSetsCompleted ? FieldValue.increment(Int64(exercise.sets.count)) : FieldValue.increment(Int64(0))
                 ]
                             
                 

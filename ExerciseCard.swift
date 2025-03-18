@@ -11,6 +11,8 @@ struct ExerciseCard: View {
     let exerciseName: String
     let setCount: Int?
     let lastSetDate: Date?
+    let isDeleting: Bool
+    let deleteAction: () -> Void
     
     var body: some View {
         HStack {
@@ -43,9 +45,18 @@ struct ExerciseCard: View {
             }
             
             Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+            if isDeleting {
+                if isDeleting {
+                    Button(action: deleteAction) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .background(Circle().fill(Color.white))
+                    }
+                }
+            } else {
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.gray)
+            }
         }
         .padding()
         .background(colorScheme == .dark ? Color(.systemGray6) : .white)

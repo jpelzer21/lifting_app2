@@ -6,7 +6,10 @@ struct ExerciseListView: View {
     @State private var exercises: [(name: String, setCount: Int?, lastSetDate: Date?)] = []
     @State private var isLoading = true
     @State private var showSortOptions = false
-    @State private var selectedSortOption: String = "Alphabetical"
+    @State private var selectedSortOption: String = "Most Recent"
+    @State private var isDeleting = false
+    @State private var exerciseToDelete: String?
+    @State private var showDeleteConfirmation = false
     
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -15,28 +18,41 @@ struct ExerciseListView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                Button(action: {
-                    showSortOptions.toggle()
-                }) {
-                    HStack {
-                        Text("Sort: \(selectedSortOption) ⌄")
-                            .font(.headline)
-                            .foregroundColor(.blue)
+            VStack (spacing: 10) {
+                HStack {
+                    Button(action: {
+                        showSortOptions.toggle()
+                    }) {
+                        HStack {
+                            Text("Sort: \(selectedSortOption)")
+                                .font(.headline)
+                                .foregroundColor(.pink)
+                        }
+                        .padding()
                     }
-                    .padding()
+                    .actionSheet(isPresented: $showSortOptions) {
+                        ActionSheet(title: Text("Sort By"), buttons: [
+                            .default(Text("Most Recent")) { selectSortOption("Most Recent") },
+                            .default(Text("Most Sets")) { selectSortOption("Most Sets") },
+                            .default(Text("A-Z")) { selectSortOption("Alphabetical A-Z") },
+                            .default(Text("Z-A")) { selectSortOption("Alphabetical Z-A") },
+                            .cancel()
+                        ])
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.trailing, 20)
+                    
+                    Button(action: { isDeleting.toggle() }) {
+                        Image(systemName: isDeleting ? "ellipsis.rectangle.fill" : "ellipsis")
+                            .imageScale(.large)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 10, height: 10)
+                            .foregroundColor(.pink)
+                            .padding(.vertical, 5)
+                            .shadow(radius: 5)
+                    }
                 }
-                .actionSheet(isPresented: $showSortOptions) {
-                    ActionSheet(title: Text("Sort By"), buttons: [
-                        .default(Text("Most Recent")) { selectSortOption("Most Recent") },
-                        .default(Text("Most Sets")) { selectSortOption("Largest Set Count") },
-                        .default(Text("Alphabetical")) { selectSortOption("Alphabetical") },
-                        .cancel()
-                    ])
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.trailing, 20)
-                
+                .padding(.trailing, 30)
                 if isLoading {
                     VStack {
                         ProgressView("Loading...")
@@ -69,18 +85,35 @@ struct ExerciseListView: View {
                                     ExerciseCard(
                                         exerciseName: exercise.name,
                                         setCount: exercise.setCount,
-                                        lastSetDate: exercise.lastSetDate
+                                        lastSetDate: exercise.lastSetDate,
+                                        isDeleting: isDeleting,
+                                        deleteAction: {
+                                            exerciseToDelete = exercise.name
+                                            showDeleteConfirmation = true
+                                        }
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
                         }
-                        .padding(.horizontal).padding(.top, 20)
+                        .padding(.horizontal).padding(.top, 10)
                     }
-                    .navigationTitle("Exercises")
                 }
             }
+            .alert(isPresented: $showDeleteConfirmation) {
+                Alert(
+                    title: Text("Delete Exercise"),
+                    message: Text("Are you sure you want to delete \"\(exerciseToDelete ?? "")\"? This action cannot be undone."),
+                    primaryButton: .destructive(Text("Delete")) {
+                        if let exercise = exerciseToDelete {
+                            deleteExercise(named: exercise)
+                        }
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
         }
+        .navigationTitle("Exercises")
         .onAppear(perform: fetchExercises)
     }
     
@@ -101,10 +134,12 @@ struct ExerciseListView: View {
         switch selectedSortOption {
         case "Most Recent":
             query = query.order(by: "lastSetDate", descending: true)
-        case "Largest Set Count":
+        case "Most Sets":
             query = query.order(by: "setCount", descending: true)
-        case "Alphabetical":
+        case "Alphabetical A-Z":
             query = query.order(by: "name", descending: false)
+        case "Alphabetical Z-A":
+            query = query.order(by: "name", descending: true)
         default:
             break
         }
@@ -124,6 +159,21 @@ struct ExerciseListView: View {
                     } ?? []
                 }
                 self.isLoading = false
+            }
+        }
+    }
+    
+    func deleteExercise(named name: String) {
+        guard let userID = Auth.auth().currentUser?.uid else { return }
+
+        let db = Firestore.firestore()
+        db.collection("users").document(userID).collection("exercises").document(name).delete { error in
+            if let error = error {
+                print("Error deleting exercise: \(error.localizedDescription)")
+            } else {
+                DispatchQueue.main.async {
+                    self.exercises.removeAll { $0.name == name }
+                }
             }
         }
     }
