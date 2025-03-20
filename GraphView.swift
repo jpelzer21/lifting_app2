@@ -109,6 +109,7 @@ struct GraphView: View {
     }
     
     private func fetchSets(name: String) {
+        print("FETCH SETS() CALLED")
         guard let userID = Auth.auth().currentUser?.uid else {
             print("Error: User not logged in")
             return

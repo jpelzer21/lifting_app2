@@ -4,16 +4,16 @@ import FirebaseAuth
 
 struct HomePageView: View {
     @Environment(\.colorScheme) var colorScheme
+    
+    @Binding var templates: [WorkoutTemplate]
+    @Binding var isTemplatesLoaded: Bool
+    
     @State private var showWorkoutView = false
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedWorkoutTitle: String = "Empty Workout"
-    @State private var templates: [WorkoutTemplate] = []
     @State private var isLoading = false
-    @State private var showProfileView = false
     @State private var userID: String? = Auth.auth().currentUser?.uid
     @State private var showDeleteButton = false
-    @State private var showFullCalendar = false
-
 
     var body: some View {
         ScrollView {
@@ -69,7 +69,7 @@ struct HomePageView: View {
                     
                     if templates.count > 0 {
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 10){
+                            HStack(spacing: 10) {
                                 ForEach(templates) { template in
                                     TemplateCard(
                                         templateName: template.name,
@@ -81,11 +81,13 @@ struct HomePageView: View {
                                             showWorkoutView.toggle()
                                         },
                                         onDelete: {
-                                            deleteTemplate(templateID: template.id) // Pass delete action
+                                            deleteTemplate(templateID: template.id)
                                         }
                                     )
                                 }
-                            }.padding(.leading, 20).padding(.vertical, 10)
+                            }
+                            .padding(.leading, 20)
+                            .padding(.vertical, 10)
                         }
                     } else {
                         VStack {
@@ -145,40 +147,25 @@ struct HomePageView: View {
                 
                 Spacer()
             }
-            .fullScreenCover(isPresented: $showFullCalendar) {
-                CalendarView()
-            }
-            
         }
         .refreshable {
-            fetchTemplates()
+            fetchTemplates(forceRefresh: true)
         }
         .onAppear {
-            fetchTemplates()
+            if !isTemplatesLoaded { fetchTemplates(forceRefresh: false) }
         }
         .navigationTitle("Home")
-//        .toolbar {
-//            ToolbarItem(placement: .navigationBarTrailing) {
-//                Button(action: {
-//                    showProfileView.toggle()
-//                }) {
-//                    Image(systemName: "person.circle")
-//                        .font(.title)
-//                        .foregroundColor(.pink)
-//                }
-//            }
-//        }
         .fullScreenCover(isPresented: $showWorkoutView) {
             WorkoutView(workoutTitle: $selectedWorkoutTitle, exercises: $selectedExercises)
-        }
-        .fullScreenCover(isPresented: $showProfileView) {
-            ProfileView()
         }
     }
 
     // Fetch all templates including exercises
-    private func fetchTemplates() {
+    private func fetchTemplates(forceRefresh: Bool) {
+        print("FETCH TEMPLATES() CALLED")
         guard let userID = userID else { return }
+        if isTemplatesLoaded && !forceRefresh { return } // Skip if already loaded
+
         isLoading = true
         let db = Firestore.firestore()
 
@@ -197,22 +184,23 @@ struct HomePageView: View {
                     let name = doc.documentID.replacingOccurrences(of: "_", with: " ").capitalized
                     let exercises = (data["exercises"] as? [[String: Any]])?.compactMap { exerciseDict -> Exercise? in
                         guard let name = exerciseDict["name"] as? String else { return nil }
-                        
                         let sets = (exerciseDict["sets"] as? [[String: Any]])?.compactMap { setDict -> ExerciseSet? in
                             let setNum = setDict["setNum"] as? Int ?? 0
                             let weight = setDict["weight"] as? Double ?? 0.0
                             let reps = setDict["reps"] as? Int ?? 0
                             return ExerciseSet(number: setNum, weight: weight, reps: reps)
                         } ?? []
-                        
                         return Exercise(name: name, sets: sets)
                     } ?? []
                     return WorkoutTemplate(id: doc.documentID, name: name, exercises: exercises)
                 } ?? []
+
+                isTemplatesLoaded = true // Mark as loaded
             }
     }
     
     private func deleteTemplate(templateID: String) {
+        print("DELETE TEMPLATES() CALLED")
         guard let userID = userID else { return }
         let db = Firestore.firestore()
 
@@ -241,9 +229,9 @@ extension View {
     }
 }
 
-
-struct HomePageView_Previews: PreviewProvider {
-    static var previews: some View {
-        HomePageView()
-    }
-}
+//
+//struct HomePageView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        HomePageView()
+//    }
+//}

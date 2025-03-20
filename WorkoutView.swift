@@ -3,9 +3,10 @@ import FirebaseFirestore
 import FirebaseAuth
 
 struct WorkoutView: View {
+    @Environment(\.presentationMode) var presentationMode
+    
     @Binding var workoutTitle: String
     @Binding var exercises: [Exercise]
-    @Environment(\.presentationMode) var presentationMode
     @State private var showingAlert = false
     @State private var showingErrorAlert: Bool = false
     @State private var isEditingTitle: Bool = false
@@ -144,6 +145,7 @@ struct WorkoutView: View {
     
     
     private func saveExercises() {
+        print("SAVE EXERCISES() CALLED")
         
         guard let userID = Auth.auth().currentUser?.uid else {
             print("User not authenticated")
@@ -152,10 +154,13 @@ struct WorkoutView: View {
         
         for exercise in exercises {
             // Define the document reference for the exercise
-            let exerciseRef = db.collection("users").document(userID).collection("exercises").document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_"))
+            let exerciseRef = db.collection("users")
+                                .document(userID)
+                                .collection("exercises")
+                                .document(exercise.name.lowercased().replacingOccurrences(of: " ", with: "_"))
                         
                         // Check if the exercise document exists
-                        exerciseRef.getDocument { (document, error) in
+            exerciseRef.getDocument { (document, error) in
                 if let error = error {
                     print("Error checking exercise document: \(error.localizedDescription)")
                     return
@@ -168,7 +173,7 @@ struct WorkoutView: View {
                 let exerciseData: [String: Any] = [
                     "name": exercise.name,
                     "lastSetDate": Timestamp(date: Date()),
-                    "setCount": exercise.allSetsCompleted ? FieldValue.increment(Int64(exercise.sets.count)) : FieldValue.increment(Int64(0))
+                    "setCount": FieldValue.increment(Int64(exercise.sets.filter { $0.isCompleted }.count)) // only increase if set is completed
                 ]
                             
                 
@@ -207,6 +212,7 @@ struct WorkoutView: View {
     }
     
     private func saveWorkout() {
+        print("SAVE WORKOUTS() CALLED")
         guard let user = Auth.auth().currentUser else {
             print("User not authenticated")
             return
@@ -254,6 +260,7 @@ struct WorkoutView: View {
     }
     
     private func saveWorkoutAsTemplate() {
+        print("SAVE WORKOUT AS TEMPLATE() CALLED")
         guard let userID = Auth.auth().currentUser?.uid else {
             print("Error: User not logged in")
             return
@@ -292,6 +299,7 @@ struct WorkoutView: View {
     }
     
     private func loadWorkoutTemplate() {
+        print("LOAD WORKOUT TEMPLATE() CALLED")
         guard let userID = Auth.auth().currentUser?.uid else {
             print("Error: User not logged in")
             return
@@ -330,11 +338,12 @@ struct WorkoutView: View {
 
 
 struct ExerciseView: View {
-    @Binding var exercise: Exercise
-    @State private var buttonPress = false
-    @State private var showingAlert = false
-    var deleteAction: () -> Void
+    @Environment(\.colorScheme) var colorScheme
     
+    @Binding var exercise: Exercise
+    @State private var showingDeleteAlert = false
+    var deleteAction: () -> Void
+
     let generator = UIImpactFeedbackGenerator(style: .medium)
     
     private let doubleFormatter: NumberFormatter = {
@@ -342,137 +351,140 @@ struct ExerciseView: View {
         numberFormatter.numberStyle = .decimal
         return numberFormatter
     }()
-    
+
     var body: some View {
-        
-        
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 10) {
+            // Exercise Title and Delete Button
             HStack {
-                Button {
-                } label: {
-                    Text("...")
-                }
                 TextField("Exercise Name", text: $exercise.name)
-                    .customTextFieldStyle()
-                    .fontWeight(.medium)
+                    .font(.headline)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
+                    .multilineTextAlignment(.leading)
+
                 Button {
-                    showingAlert = true
-                    print("workout deleted")
+                    showingDeleteAlert = true
                 } label: {
-                    Text("Delete")
-                }.alert(isPresented:$showingAlert) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                        .padding()
+                        .background(Circle().fill(Color(UIColor.systemGray6)))
+                }
+                .alert(isPresented: $showingDeleteAlert) {
                     Alert(
                         title: Text("Delete \(exercise.name)?"),
+                        message: Text("Are you sure you want to remove this exercise?"),
                         primaryButton: .destructive(Text("Delete")) {
-                            print("\(exercise.name) deleted")
                             withAnimation {
                                 deleteAction()
                             }
                         },
-                        secondaryButton: .cancel(Text("Cancel"))
+                        secondaryButton: .cancel()
                     )
                 }
-            }.padding(.bottom, 5)
-            HStack{
-                Text("set").frame(width: 75).multilineTextAlignment(.center)
+            }
+
+            Divider()
+
+            // Set Headers
+            HStack {
+                Text("Set")
                     .frame(width: 50)
                 Spacer()
-                Text("weight").frame(width: 75).multilineTextAlignment(.center)
-                    .frame(width: 75)
+                Text("Weight")
+                    .frame(width: 80)
                 Spacer()
-                Text("reps").frame(width: 75).multilineTextAlignment(.center)
-                    .frame(width: 75)
+                Text("Reps")
+                    .frame(width: 60)
                 Spacer()
-                ZStack{
-                    Rectangle()
-                        .fill(exercise.allSetsCompleted ? Color.green : Color.gray)
-                        .frame(width: 25, height: 25)
-                        .opacity(exercise.allSetsCompleted ? 0.8 : 0.3)
-                        .cornerRadius(8)
+                Text("✔️")
+                    .frame(width: 30)
+            }
+            .font(.subheadline)
+            .foregroundColor(.gray)
+
+            // Set List
+            ForEach($exercise.sets) { $set in
+                HStack {
+                    Text("\(set.number)")
+                        .frame(width: 50)
+                        .fontWeight(.medium)
+
+                    Spacer()
+
+                    TextField("0", value: $set.weight, formatter: doubleFormatter)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 80)
+                        .keyboardType(.decimalPad)
+
+                    Spacer()
+
+                    TextField("0", value: $set.reps, formatter: NumberFormatter())
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 60)
+                        .keyboardType(.numberPad)
+
+                    Spacer()
+
                     Button {
                         generator.impactOccurred()
-                        exercise.allSetsCompleted.toggle()
-                        exercise.sets = exercise.sets.map { set in
-                            var updatedSet = set
-                            updatedSet.isCompleted = exercise.allSetsCompleted
-                            return updatedSet
-                        }
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        set.isCompleted.toggle()
                     } label: {
-                        Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
+                        Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(set.isCompleted ? .green : .gray)
+                            .font(.title3)
                     }
+                    .buttonStyle(BorderlessButtonStyle())
+                    .frame(width: 30)
                 }
-            }.padding(.bottom, 5)
-            ForEach($exercise.sets) { $set in
-                
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill((set.isCompleted || exercise.allSetsCompleted) ? Color.green : Color(UIColor.systemBackground))
-                        .opacity((set.isCompleted || exercise.allSetsCompleted) ? 0.3 : 1)
-                        .saturation((set.isCompleted || exercise.allSetsCompleted) ? 0.6 : 1)
-                    
+                .padding(.vertical, 5)
+                .background(set.isCompleted ? Color.green.opacity(0.8) : Color.clear)
+                .cornerRadius(10)
+                .animation(.easeInOut, value: set.isCompleted)
+            }
+
+            HStack { // add and remove sets
+                Button(action: {
+                    let newSet = ExerciseSet(number: (exercise.sets.last?.number ?? 0) + 1, weight: 0, reps: 0)
+                    withAnimation {
+                        exercise.sets.append(newSet)
+                    }
+                }) {
                     HStack {
-                    
-                        Text("\(set.number)")
-                            .frame(width: 50)
-                        Spacer()
-                        TextField("Weight", value: $set.weight, formatter: doubleFormatter)
-                            .customTextFieldStyle()
-                            .keyboardType(.decimalPad)
-                            .frame(width: 75)
-                        Spacer()
-                        TextField("Reps", value: $set.reps, formatter: NumberFormatter())
-                            .customTextFieldStyle()
-                            .keyboardType(.decimalPad)
-                            .frame(width: 75)
-                        Spacer()
-                        ZStack{
-                            Rectangle()
-                                .fill((set.isCompleted || exercise.allSetsCompleted) ? Color.green : Color.gray)
-                                .frame(width: 25, height: 25)
-                                .opacity((set.isCompleted || exercise.allSetsCompleted) ? 0.8 : 0.3)
-                                .cornerRadius(8)
-                            Button {
-                                generator.impactOccurred()
-                                set.isCompleted.toggle()
-                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                            } label: {
-                                Image(systemName: "checkmark").aspectRatio(contentMode: .fill).foregroundStyle(.black)
-                            }
+                        Image(systemName: "plus.circle.fill")
+                        Text("Add Set")
+                    }
+                    .foregroundColor(.blue)
+                    .font(.body)
+                    .padding(.vertical, 5)
+                }
+                Spacer()
+                Button(action: {
+                    if !exercise.sets.isEmpty {
+                        withAnimation {
+                            _ = exercise.sets.removeLast() // Explicitly discard result
                         }
                     }
-                }
-                
-                
-            }
-            
-            HStack {
-                Spacer()
-                Button("Add Set") {
-                    generator.impactOccurred()
-                    exercise.sets.append(ExerciseSet(
-                        number: exercise.sets.count + 1,
-                        weight: exercise.sets[exercise.sets.count-1].weight,
-                        reps: exercise.sets[exercise.sets.count-1].reps
-                    ))
-                }
-                .customButtonStyle()
-                .tint(.green)
-                
-                Button("Remove Set") {
-                    if !exercise.sets.isEmpty {
-                        generator.impactOccurred()
-                        exercise.sets.removeLast()
+                }) {
+                    HStack {
+                        Image(systemName: "minus.circle.fill")
+                        Text("Remove Set")
                     }
+                    .foregroundColor(exercise.sets.isEmpty ? .gray : .red)
+                    .font(.body)
+                    .padding(.vertical, 5)
                 }
-                .customButtonStyle()
-                .tint(.red)
-                .disabled(exercise.sets.isEmpty)
-                Spacer()
-            }.padding(.top, 5)
+                .disabled(exercise.sets.isEmpty) // Disable when no sets exist
+            }
+            .padding(.leading, 15)
+            
         }
-        .ignoresSafeArea()
         .padding()
+        .background(RoundedRectangle(cornerRadius: 15).fill(colorScheme == .dark ? Color(.systemGray6) : Color(UIColor.systemBackground)).shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2))
+        .padding(.horizontal)
     }
 }
 

@@ -105,6 +105,7 @@ struct LoginView: View {
     
     // MARK: - Sign In Function
     func signIn() {
+        print("SIGN IN() CALLED")
         isLoading = true
         errorMessage = nil
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
@@ -119,6 +120,7 @@ struct LoginView: View {
     
     // MARK: - Register Function (Stores User Info in Firestore)
     func register() {
+        print("REGISTER() CALLED")
         isLoading = true
         errorMessage = nil
         Auth.auth().createUser(withEmail: email, password: password) { result, error in

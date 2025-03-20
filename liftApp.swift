@@ -9,9 +9,17 @@ import SwiftUI
 import FirebaseCore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    
+    enum Constants {
+        static let apiKey = ""
+        static let apiSecret = ""
+    }
+    
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
         FirebaseApp.configure()
+        
         return true
     }
 }

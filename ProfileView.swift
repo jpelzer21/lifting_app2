@@ -1,123 +1,86 @@
-//
-//  ProfileView.swift
-//  lift
-//
-//  Created by Josh Pelzer on 3/13/25.
-//
-
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
 struct ProfileView: View {
-    @State private var userName: String = "Loading..."
-    @State private var weight: String = "Loading..."
-    @State private var userEmail: String = "Loading..."
-    @State private var showingAlert = false
     @Environment(\.presentationMode) var presentationMode
-    
+    @StateObject private var userViewModel = UserViewModel.shared // Use the shared instance
+    @State private var showingAlert = false
+
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
+                // Profile Image
                 Image(systemName: "person.crop.circle.fill")
                     .resizable()
                     .frame(width: 100, height: 100)
                     .foregroundColor(.blue)
-                    .padding(.top, 50)
-                
-                Text(userName)
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("Weight: \(weight)")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                
-                Text(userEmail)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                
-                NavigationLink(destination: CalendarView()) {
-                    Text("Go to Calendar")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.pink)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal, 30)
-                
-                NavigationLink(destination: HistoryView()) {
-                    Text("Workout History")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.pink)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal, 30)
+                    .padding(.top, 30)
 
-                
+                // Profile Info Card
+                VStack(spacing: 10) {
+                    Text(userViewModel.userName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    Text("Weight: \(userViewModel.weight) lbs")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+
+                    Text(userViewModel.userEmail)
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemGray6))
+                .cornerRadius(15)
+                .padding(.horizontal, 20)
+
+                // Navigation Buttons
+                VStack(spacing: 10) {
+                    NavigationLink(destination: CalendarView()) {
+                        CustomButton(title: "View Calendar", color: .blue)
+                    }
+                    NavigationLink(destination: HistoryView()) {
+                        CustomButton(title: "Workout History", color: .pink)
+                    }
+                }
+                .padding(.horizontal, 20)
+
                 Spacer()
-                
+
+                // Logout Button
                 Button {
                     showingAlert = true
-                }label: {
-                    Text("Log Out")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                } label: {
+                    CustomButton(title: "Log Out", color: .red)
                 }
-                .alert(isPresented:$showingAlert) {
+                .alert(isPresented: $showingAlert) {
                     Alert(
                         title: Text("Log Out?"),
+                        message: Text("Are you sure you want to sign out?"),
                         primaryButton: .destructive(Text("Yes")) {
-                            print("logged out")
                             signOut()
                         },
-                        secondaryButton: .cancel(Text("No")) {
-                            showingAlert = false
-                        }
+                        secondaryButton: .cancel()
                     )
                 }
-                .padding(.horizontal, 30)
-                
+
                 Spacer()
             }
             .padding()
             .navigationTitle("Profile")
-//            .navigationBarItems(leading: Button("Close") {
-//                presentationMode.wrappedValue.dismiss()
-//            })
-            .onAppear {
-                fetchUserData()
-            }
         }
     }
-    
-    private func fetchUserData() {
-        guard let user = Auth.auth().currentUser else { return }
-        userEmail = user.email ?? "No Email"
-        
-        let db = Firestore.firestore()
-        db.collection("users").document(user.uid).getDocument { snapshot, error in
-            if let error = error {
-                print("❌ Error fetching user data: \(error.localizedDescription)")
-            } else if let data = snapshot?.data() {
-                let first = data["firstName"] as? String ?? "No "
-                let last = data["lastName"] as? String ?? "Name"
-                userName = "\(first) \(last)"
-                weight = data["weight"] as? String ?? "0"
-            }
-        }
-    }
-    
+
+    // Sign Out Function
     private func signOut() {
+        print("SIGN OUT() CALLED")
         do {
             try Auth.auth().signOut()
-            presentationMode.wrappedValue.dismiss()  // Close ProfileView
+            presentationMode.wrappedValue.dismiss()
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                let window = scene.windows.first {
                 window.rootViewController = UIHostingController(rootView: LoginView())
@@ -126,6 +89,22 @@ struct ProfileView: View {
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }
+    }
+}
+
+// Custom Button Modifier
+struct CustomButton: View {
+    var title: String
+    var color: Color
+    
+    var body: some View {
+        Text(title)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(color)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .shadow(radius: 5)
     }
 }
 

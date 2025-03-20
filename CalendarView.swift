@@ -98,6 +98,7 @@ struct CalendarView: View {
 
 
     private func fetchWorkoutDates() {
+        print("FETCH WORKOUT DATES() CALLED")
         guard let userID = Auth.auth().currentUser?.uid else {
             print("User not authenticated")
             return

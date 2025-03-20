@@ -3,45 +3,46 @@ import FirebaseFirestore
 import FirebaseAuth
 
 struct HistoryView: View {
-    @State private var workouts: [(title: String, date: Date, exercises: [String])] = []
+    @State private var workouts: [(id: String, title: String, date: Date, exercises: [String])] = []
     @State private var isLoading = true
     
     var body: some View {
         NavigationView {
-                VStack {
-                    if isLoading {
-                        ProgressView("Loading workouts...")
-                            .padding()
-                    } else if workouts.isEmpty {
-                        VStack {
-                            Image(systemName: "list.bullet.rectangle")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 80, height: 80)
-                                .foregroundColor(.gray)
-                            
-                            Text("No workout history found!")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.top, 100)
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 15) {
-                                ForEach(workouts, id: \.title) { workout in
-                                    WorkoutCard(workout: workout)
-                                }
+            VStack {
+                if isLoading {
+                    ProgressView("Loading workouts...")
+                        .padding()
+                } else if workouts.isEmpty {
+                    VStack {
+                        Image(systemName: "list.bullet.rectangle")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
+                            .foregroundColor(.gray)
+                        
+                        Text("No workout history found!")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.top, 100)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 15) {
+                            ForEach(workouts, id: \.id) { workout in
+                                WorkoutCard(workout: workout)
                             }
-                            .padding()
                         }
+                        .padding()
                     }
                 }
+            }
             .navigationTitle("Workout History")
             .onAppear(perform: fetchWorkoutHistory)
         }
     }
     
     private func fetchWorkoutHistory() {
+        print("FETCH WORKOUT HISTORY() CALLED")
         guard let userID = Auth.auth().currentUser?.uid else { return }
         
         let db = Firestore.firestore()
@@ -54,10 +55,20 @@ struct HistoryView: View {
                         self.workouts = []
                     } else {
                         self.workouts = snapshot?.documents.compactMap { doc in
+                            let id = doc.documentID  // Unique workout ID
                             let title = doc["title"] as? String ?? "No Title"
-                            let exercises = doc["exercises"] as? [String] ?? []
                             let timestamp = (doc["timestamp"] as? Timestamp)?.dateValue() ?? Date()
-                            return (title, timestamp, exercises)
+                            
+                            // Extract exercises with sets and reps
+                            let exercisesArray = doc["exercises"] as? [[String: Any]] ?? []
+                            let formattedExercises = exercisesArray.compactMap { exercise -> String? in
+                                guard let name = exercise["name"] as? String,
+                                      let sets = exercise["sets"] as? Int,
+                                      let reps = exercise["reps"] as? Int else { return nil }
+                                return "\(sets)x\(reps) \(name)"  // Format as "3x8 Bench Press"
+                            }
+                            
+                            return (id, title, timestamp, formattedExercises)
                         } ?? []
                     }
                     self.isLoading = false
@@ -68,7 +79,7 @@ struct HistoryView: View {
 
 struct WorkoutCard: View {
     @Environment(\.colorScheme) var colorScheme
-    var workout: (title: String, date: Date, exercises: [String])
+    var workout: (id: String, title: String, date: Date, exercises: [String])
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -95,9 +106,7 @@ struct WorkoutCard: View {
                     HStack {
                         Text("• ")
                             .font(.headline)
-//                        Image(systemName: "checkmark.circle.fill")
-//                            .foregroundColor(.green)
-                        Text(exercise)
+                        Text(exercise)  // Already formatted as "3x8 Bench Press"
                     }
                     .font(.subheadline)
                 }
@@ -114,11 +123,5 @@ struct WorkoutCard: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         return formatter.string(from: date)
-    }
-}
-
-struct HistoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        HistoryView()
     }
 }
