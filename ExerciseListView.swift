@@ -17,8 +17,19 @@ struct ExerciseListView: View {
     ]
     
     var body: some View {
-        NavigationView {
-            VStack (spacing: 10) {
+//        NavigationView {
+            VStack (spacing: 0) {
+                
+                NavigationLink(destination: HistoryView()) {
+                    Text("History")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.pink)
+                        .cornerRadius(10)
+                }
+                .padding(.leading, 20)
+                
                 HStack {
                     Button(action: {
                         showSortOptions.toggle()
@@ -51,8 +62,10 @@ struct ExerciseListView: View {
                             .padding(.vertical, 5)
                             .shadow(radius: 5)
                     }
+                    .padding(.trailing, 30)
                 }
-                .padding(.trailing, 30)
+                
+                
                 if isLoading {
                     VStack {
                         ProgressView("Loading...")
@@ -60,6 +73,7 @@ struct ExerciseListView: View {
                     }
                 } else if exercises.isEmpty {
                     VStack(alignment: .center) {
+                        Spacer()
                         Image(systemName: "dumbbell.fill")
                             .resizable()
                             .scaledToFit()
@@ -74,6 +88,7 @@ struct ExerciseListView: View {
                         Text("Add an exercise by making a template!")
                             .font(.subheadline)
                             .foregroundColor(.gray)
+                        Spacer()
                     }
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 100)
@@ -98,8 +113,10 @@ struct ExerciseListView: View {
                         }
                         .padding(.horizontal).padding(.top, 10)
                     }
+                    .ignoresSafeArea(.all, edges: .bottom)
                 }
             }
+            .padding(.top, 50)
             .alert(isPresented: $showDeleteConfirmation) {
                 Alert(
                     title: Text("Delete Exercise"),
@@ -112,8 +129,9 @@ struct ExerciseListView: View {
                     secondaryButton: .cancel()
                 )
             }
-        }
-        .navigationTitle("Exercises")
+            .navigationTitle("Exercises")
+//        }
+//        .navigationTitle("Exercises")
         .onAppear(perform: fetchExercises)
     }
     

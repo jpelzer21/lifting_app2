@@ -3,7 +3,10 @@ import FirebaseFirestore
 import FirebaseAuth
 
 struct CalendarView: View {
-    @State private var selectedDate: Date = Date()
+    @Environment(\.presentationMode) var presentationMode
+    @State private var selectedDate: Date? = nil
+    @State private var navigateToDetail = false
+    
     private let calendar = Calendar.current
     private let year: Int = Calendar.current.component(.year, from: Date())
     
@@ -90,6 +93,7 @@ struct CalendarView: View {
             }
         }
         .navigationTitle(Text(verbatim: "\(year) Calendar"))
+
     }
 
 

@@ -3,6 +3,7 @@ import FirebaseFirestore
 import FirebaseAuth
 
 struct HomePageView: View {
+    @Environment(\.colorScheme) var colorScheme
     @State private var showWorkoutView = false
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedWorkoutTitle: String = "Empty Workout"
@@ -11,6 +12,8 @@ struct HomePageView: View {
     @State private var showProfileView = false
     @State private var userID: String? = Auth.auth().currentUser?.uid
     @State private var showDeleteButton = false
+    @State private var showFullCalendar = false
+
 
     var body: some View {
         ScrollView {
@@ -142,6 +145,9 @@ struct HomePageView: View {
                 
                 Spacer()
             }
+            .fullScreenCover(isPresented: $showFullCalendar) {
+                CalendarView()
+            }
             
         }
         .refreshable {
@@ -151,17 +157,17 @@ struct HomePageView: View {
             fetchTemplates()
         }
         .navigationTitle("Home")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showProfileView.toggle()
-                }) {
-                    Image(systemName: "person.circle")
-                        .font(.title)
-                        .foregroundColor(.pink)
-                }
-            }
-        }
+//        .toolbar {
+//            ToolbarItem(placement: .navigationBarTrailing) {
+//                Button(action: {
+//                    showProfileView.toggle()
+//                }) {
+//                    Image(systemName: "person.circle")
+//                        .font(.title)
+//                        .foregroundColor(.pink)
+//                }
+//            }
+//        }
         .fullScreenCover(isPresented: $showWorkoutView) {
             WorkoutView(workoutTitle: $selectedWorkoutTitle, exercises: $selectedExercises)
         }

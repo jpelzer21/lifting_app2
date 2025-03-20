@@ -7,6 +7,7 @@ struct WorkoutView: View {
     @Binding var exercises: [Exercise]
     @Environment(\.presentationMode) var presentationMode
     @State private var showingAlert = false
+    @State private var showingErrorAlert: Bool = false
     @State private var isEditingTitle: Bool = false
 
     private let db = Firestore.firestore()
@@ -85,8 +86,12 @@ struct WorkoutView: View {
             }
             .toolbarBackgroundVisibility(.hidden)
             .navigationBarItems(trailing: Button("Finish Workout") {
-                showingAlert = true
-            }.alert(isPresented:$showingAlert) {
+                if workoutTitle != "New Template" {
+                    showingAlert = true
+                } else {
+                    showingErrorAlert = true
+                }
+            }.alert(isPresented: $showingAlert) {
                 Alert(
                     title: Text("You have completed \(completedSets()) exercises"),
                     primaryButton: .default(Text("Finish")) {

@@ -13,6 +13,7 @@ struct ProfileView: View {
     @State private var userName: String = "Loading..."
     @State private var weight: String = "Loading..."
     @State private var userEmail: String = "Loading..."
+    @State private var showingAlert = false
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -36,9 +37,32 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 
+                NavigationLink(destination: CalendarView()) {
+                    Text("Go to Calendar")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.pink)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal, 30)
+                
+                NavigationLink(destination: HistoryView()) {
+                    Text("Workout History")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.pink)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal, 30)
+
+                
                 Spacer()
                 
-                Button(action: signOut) {
+                Button {
+                    showingAlert = true
+                }label: {
                     Text("Log Out")
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -46,15 +70,27 @@ struct ProfileView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
+                .alert(isPresented:$showingAlert) {
+                    Alert(
+                        title: Text("Log Out?"),
+                        primaryButton: .destructive(Text("Yes")) {
+                            print("logged out")
+                            signOut()
+                        },
+                        secondaryButton: .cancel(Text("No")) {
+                            showingAlert = false
+                        }
+                    )
+                }
                 .padding(.horizontal, 30)
                 
                 Spacer()
             }
             .padding()
             .navigationTitle("Profile")
-            .navigationBarItems(leading: Button("Close") {
-                presentationMode.wrappedValue.dismiss()
-            })
+//            .navigationBarItems(leading: Button("Close") {
+//                presentationMode.wrappedValue.dismiss()
+//            })
             .onAppear {
                 fetchUserData()
             }

@@ -39,22 +39,25 @@ struct ContentView: View {
             
             
             NavigationStack() {
-                CalendarView()
-                    .navigationTitle("Calendar")
+                ProfileView()
+                    .navigationTitle("Profile")
             }
             .tabItem {
-                Label("Calendar", systemImage: "calendar")
+                Label("Profile", systemImage: "person.crop.circle.fill")
             }
             .tag(2)
             
         }
         .tint(.pink)
         .onAppear(perform: {
-            
+            let appearance = UITabBarAppearance()
+            UITabBar.appearance().backgroundColor = UIColor.systemBackground
             UITabBar.appearance().unselectedItemTintColor = .systemBrown
             UITabBarItem.appearance().badgeColor = .systemPink
-            UITabBar.appearance().backgroundColor = .systemGray4.withAlphaComponent(0.4)
+//            UITabBar.appearance().backgroundColor = .systemGray4.withAlphaComponent(0.4)
             UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor.systemPink]
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
         })
     }
 }
