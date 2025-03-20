@@ -215,22 +215,33 @@ struct WorkoutView: View {
         let workoutRef = db.collection("users").document(user.uid).collection("workouts").document() // Generates a random ID
 
         print("Saving workout with title: \(workoutTitle)")
-        
-        // Filter exercises to include only those with at least one completed set
-        let completedExercises = exercises
-            .filter { !$0.sets.isEmpty } // Only keep exercises that have at least one set
-            .map { $0.name } // Store only exercise names
+
+        var exerciseDetails: [[String: Any]] = []
+
+        for exercise in exercises {
+            guard !exercise.sets.isEmpty else { continue }
+
+            // Find the set with the largest rep count
+            if let maxRepSet = exercise.sets.max(by: { $0.reps < $1.reps }) {
+                let exerciseData: [String: Any] = [
+                    "name": exercise.name,
+                    "sets": exercise.sets.count,  // Total number of sets
+                    "reps": maxRepSet.reps        // Maximum reps in a single set
+                ]
+                exerciseDetails.append(exerciseData)
+            }
+        }
 
         // If no exercises have sets, don't save the workout
-        guard !completedExercises.isEmpty else {
+        guard !exerciseDetails.isEmpty else {
             print("Workout not saved because no exercises contain sets.")
             return
         }
-        
+
         let workoutData: [String: Any] = [
             "title": workoutTitle,
             "timestamp": Timestamp(date: Date()),
-            "exercises": exercises.map { $0.name }
+            "exercises": exerciseDetails
         ]
 
         workoutRef.setData(workoutData) { error in

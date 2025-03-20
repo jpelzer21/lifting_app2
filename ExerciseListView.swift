@@ -20,16 +20,6 @@ struct ExerciseListView: View {
 //        NavigationView {
             VStack (spacing: 0) {
                 
-                NavigationLink(destination: HistoryView()) {
-                    Text("History")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.pink)
-                        .cornerRadius(10)
-                }
-                .padding(.leading, 20)
-                
                 HStack {
                     Button(action: {
                         showSortOptions.toggle()

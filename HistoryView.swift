@@ -8,9 +8,6 @@ struct HistoryView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                Color(.systemGray6).edgesIgnoringSafeArea(.all) // Light background
-                
                 VStack {
                     if isLoading {
                         ProgressView("Loading workouts...")
@@ -39,7 +36,6 @@ struct HistoryView: View {
                         }
                     }
                 }
-            }
             .navigationTitle("Workout History")
             .onAppear(perform: fetchWorkoutHistory)
         }
@@ -71,13 +67,14 @@ struct HistoryView: View {
 }
 
 struct WorkoutCard: View {
+    @Environment(\.colorScheme) var colorScheme
     var workout: (title: String, date: Date, exercises: [String])
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "dumbbell.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.pink)
                     .font(.title2)
                 
                 Text(workout.title)
@@ -96,8 +93,10 @@ struct WorkoutCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(workout.exercises, id: \.self) { exercise in
                     HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                        Text("• ")
+                            .font(.headline)
+//                        Image(systemName: "checkmark.circle.fill")
+//                            .foregroundColor(.green)
                         Text(exercise)
                     }
                     .font(.subheadline)
@@ -105,9 +104,9 @@ struct WorkoutCard: View {
             }
         }
         .padding()
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(radius: 3)
+        .cornerRadius(12)
+        .background(colorScheme == .dark ? Color(.systemGray6) : .white)
+        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
         .padding(.horizontal)
     }
     
