@@ -81,7 +81,9 @@ struct WorkoutView: View {
                     }
                     loadWorkoutTemplate()
                 }
+                .ignoresSafeArea(.all)
             }
+            
             .onTapGesture {// Dismiss the keyboard when tapping anywhere on the screen
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
@@ -374,7 +376,7 @@ struct ExerciseView: View {
                 .alert(isPresented: $showingDeleteAlert) {
                     Alert(
                         title: Text("Delete \(exercise.name)?"),
-                        message: Text("Are you sure you want to remove this exercise?"),
+                        message: Text("Remove \(exercise.name) from this template?"),
                         primaryButton: .destructive(Text("Delete")) {
                             withAnimation {
                                 deleteAction()
@@ -387,6 +389,7 @@ struct ExerciseView: View {
 
             Divider()
 
+            
             // Set Headers
             HStack {
                 Text("Set")
@@ -403,52 +406,58 @@ struct ExerciseView: View {
             }
             .font(.subheadline)
             .foregroundColor(.gray)
-
-            // Set List
-            ForEach($exercise.sets) { $set in
-                HStack {
-                    Text("\(set.number)")
-                        .frame(width: 50)
-                        .fontWeight(.medium)
-
-                    Spacer()
-
-                    TextField("0", value: $set.weight, formatter: doubleFormatter)
-                        .multilineTextAlignment(.center)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 80)
-                        .keyboardType(.decimalPad)
-
-                    Spacer()
-
-                    TextField("0", value: $set.reps, formatter: NumberFormatter())
-                        .multilineTextAlignment(.center)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 60)
-                        .keyboardType(.numberPad)
-
-                    Spacer()
-
-                    Button {
-                        generator.impactOccurred()
-                        set.isCompleted.toggle()
-                    } label: {
-                        Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(set.isCompleted ? .green : .gray)
-                            .font(.title3)
+                
+            VStack (spacing: 0) {
+                // Set List
+                ForEach($exercise.sets) { $set in
+                    HStack {
+                        Text("\(set.number)")
+                            .frame(width: 50)
+                            .fontWeight(.medium)
+                        
+                        Spacer()
+                        
+                        TextField("0", value: $set.weight, formatter: doubleFormatter)
+                            .customTextFieldStyle()
+                            .frame(width: 80)
+                            .keyboardType(.decimalPad)
+                        
+                        Spacer()
+                        
+                        TextField("0", value: $set.reps, formatter: NumberFormatter())
+                            .customTextFieldStyle()
+                            .frame(width: 60)
+                            .keyboardType(.numberPad)
+                        
+                        Spacer()
+                        
+                        Button {
+                            generator.impactOccurred()
+                            set.isCompleted.toggle()
+                        } label: {
+                            Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(set.isCompleted ? .green : .gray)
+                                .font(.title3)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .frame(width: 30)
                     }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .frame(width: 30)
+                    .padding(.vertical, 5)
+                    .background(/*set.isCompleted ? Color("androidGreen") : */Color.clear)
+                    .saturation(0.8)
+                    .cornerRadius(10)
+                    .animation(.easeInOut, value: set.isCompleted)
                 }
-                .padding(.vertical, 5)
-                .background(set.isCompleted ? Color.green.opacity(0.8) : Color.clear)
-                .cornerRadius(10)
-                .animation(.easeInOut, value: set.isCompleted)
+//                .padding(.vertical, 10)
             }
 
             HStack { // add and remove sets
                 Button(action: {
-                    let newSet = ExerciseSet(number: (exercise.sets.last?.number ?? 0) + 1, weight: 0, reps: 0)
+                    let newSet = ExerciseSet(
+                        number: exercise.sets.count + 1,
+                        weight: exercise.sets[exercise.sets.count-1].weight,
+                        reps: exercise.sets[exercise.sets.count-1].reps
+                    )
                     withAnimation {
                         exercise.sets.append(newSet)
                     }
@@ -483,7 +492,11 @@ struct ExerciseView: View {
             
         }
         .padding()
-        .background(RoundedRectangle(cornerRadius: 15).fill(colorScheme == .dark ? Color(.systemGray6) : Color(UIColor.systemBackground)).shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2))
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(colorScheme == .dark ? Color(.systemGray6) : Color(UIColor.systemBackground))
+                .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+        )
         .padding(.horizontal)
     }
 }

@@ -27,77 +27,126 @@ struct GraphView: View {
 
     var body: some View {
         let firstSets = exerciseSets.filter { $0.number == 1 }
-        VStack {
-            Text(exerciseName.replacingOccurrences(of: "_", with: " ").capitalized)
-                .font(.largeTitle)
-                .bold()
-                .padding()
-            
-            
-            Picker("Metric", selection: $selectedMetric) {
-                ForEach(Metric.allCases, id: \.self) { metric in
-                    Text(metric.rawValue).tag(metric)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
-            if isLoading {
-                ProgressView("Loading exercise data...")
+//        ScrollView{
+            VStack (spacing: 5) {
+                Spacer()
+                Text(exerciseName.replacingOccurrences(of: "_", with: " ").capitalized)
+                    .font(.largeTitle)
+                    .bold()
                     .padding()
-            } else {
-                if exerciseSets.isEmpty {
-                    VStack {
-                        Text("No recorded sets for this exercise.")
-                            .foregroundColor(.gray)
-                    }
-                } else {
-                    if firstSets.count > 1 {
-                        Chart {
-                            ForEach(exerciseSets) { set in
-                                PointMark(
-                                    x: .value("Date", set.date),
-                                    y: .value(selectedMetric.rawValue,
-                                              selectedMetric == .weight ? set.weight :
-                                                selectedMetric == .reps ? Double(set.reps) :
-                                                set.weight * Double(set.reps))
-                                )
-                                .symbol(.circle)
-                                .opacity(1/Double(set.number))
-                                .foregroundStyle(Color.pink)
-                            }
-                            
-                            ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
-                                LineMark(
-                                    x: .value("Date", set.date),
-                                    y: .value(selectedMetric.rawValue, metricValue(for: set))
-                                )
-                                .foregroundStyle(Color.pink)
-                                .lineStyle(StrokeStyle(lineWidth: 2)) // Dashed line for clarity
-                            }
-                            
-                        }
-                        .chartXAxis {
-                            AxisMarks(position: .bottom) {
-                                AxisValueLabel(format: .dateTime.month().day())
-                            }
-                        }
-                        .chartYAxis {
-                            AxisMarks(position: .trailing)
-                        }
-                        .chartYScale(domain: minYAxisValue...maxYAxisValue)
-                        .frame(height: 300)
-                        .padding()
-                    } else {
-                        Text("Not enough data to display a trend.")
-                            .foregroundColor(.gray)
-                            .padding()
+                
+                
+                Picker("Metric", selection: $selectedMetric) {
+                    ForEach(Metric.allCases, id: \.self) { metric in
+                        Text(metric.rawValue).tag(metric)
                     }
                 }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding()
+                if isLoading {
+                    ProgressView("Loading exercise data...")
+                        .padding()
+                } else {
+                    if exerciseSets.isEmpty {
+                        VStack {
+                            Text("No recorded sets for this exercise.")
+                                .foregroundColor(.gray)
+                        }
+                    } else {
+                        if firstSets.count > 1 {
+                            Chart {
+                                ForEach(exerciseSets) { set in
+                                    PointMark(
+                                        x: .value("Date", set.date),
+                                        y: .value(selectedMetric.rawValue,
+                                                  selectedMetric == .weight ? set.weight :
+                                                    selectedMetric == .reps ? Double(set.reps) :
+                                                    set.weight * Double(set.reps))
+                                    )
+                                    .symbol(.circle)
+                                    .opacity(1/Double(set.number))
+                                    .foregroundStyle(Color.pink)
+                                }
+                                
+                                ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
+                                    LineMark(
+                                        x: .value("Date", set.date),
+                                        y: .value(selectedMetric.rawValue, metricValue(for: set))
+                                    )
+                                    .foregroundStyle(Color.pink)
+                                    .lineStyle(StrokeStyle(lineWidth: 2))
+                                }
+                                
+                            }
+                            .chartXAxis {
+                                AxisMarks(position: .bottom) {
+                                    AxisValueLabel(format: .dateTime.month().day())
+                                }
+                            }
+                            .chartYAxis {
+                                AxisMarks(position: .trailing)
+                            }
+                            .chartYScale(domain: minYAxisValue...maxYAxisValue)
+                            .frame(height: 300)
+                            .padding()
+                        } else {
+                            Text("Not enough data to display a trend.")
+                                .foregroundColor(.gray)
+                                .padding()
+                        }
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Best Set:")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("N/A") // Placeholder for dynamic data
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Heaviest Weight:")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("N/A")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("1 Rep Max:")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("N/A")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Best Session:")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("N/A")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+                
+//                Spacer()
             }
-        }
-        .onAppear {
-            fetchSets(name: exerciseName)
-        }
+            .onAppear {
+                fetchSets(name: exerciseName)
+            }
+            .padding(.bottom, 20)
+//        }
     }
     
     private func metricValue(for set: ExerciseSet) -> Double {

@@ -8,8 +8,13 @@
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
+import GoogleSignIn
+import GoogleSignInSwift
+import FirebaseCore
 
 struct LoginView: View {
+    @Environment(\.colorScheme) var colorScheme
+    
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var weight = ""
@@ -27,6 +32,11 @@ struct LoginView: View {
         } else {
             content
         }
+    }
+    
+    var isLoginDisabled: Bool {
+        return email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+               password.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty
     }
     
     var content: some View {
@@ -73,17 +83,77 @@ struct LoginView: View {
                     .bold()
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.pink)
+                    .background(isLoginDisabled ? Color.gray.opacity(0.5) : Color.pink)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
             .padding()
-            .disabled(isLoading)
+            .disabled(isLoginDisabled)
+            
 
             Button(action: { isRegistering.toggle() }) {
                 Text(isRegistering ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
                     .foregroundColor(.pink)
             }
+            
+            Divider()
+                .padding(.vertical)
+
+            // Google Sign-In Button
+            Button(action: {
+                Task {
+                    _ = await signInWithGoogle()
+                }
+            }) {
+                HStack {
+                    Image("Google")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                    
+                    Spacer()
+
+                    Text("Sign in with Google")
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    Spacer()
+                }
+                .padding()
+                .background(colorScheme != .dark ? .white : Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .shadow(radius: 3)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: .infinity)
+            
+            // Apple Sign-In button
+            Button(action: {
+                Task {
+//                    _ = await signInWithGoogle()
+                }
+            }) {
+                HStack {
+                    Image(systemName: "apple.logo")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                    
+                    Spacer()
+
+                    Text("Sign in with Apple")
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    Spacer()
+                }
+                .padding()
+                .background(colorScheme != .dark ? .white : Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .shadow(radius: 3)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: .infinity)
         }
         .onAppear {
             authListener = Auth.auth().addStateDidChangeListener { _, user in
@@ -151,5 +221,43 @@ struct LoginView: View {
                 print("✅ User data successfully saved in Firestore!")
             }
         }
+    }
+    
+    
+}
+
+extension LoginView {
+    @MainActor
+    func signInWithGoogle() async -> Bool {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            fatalError("No client ID found in Firebase configuration")
+        }
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+        
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController else {
+            print("There is no root view controller")
+            return false
+        }
+        do {
+            let userAuthentication = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            let user = userAuthentication.user
+            guard let idToken = user.idToken else {
+                print("❌ Google Sign-In Error: ID Token Missing")
+                return false
+            }
+            let accessToken = user.accessToken
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken.tokenString, accessToken: accessToken.tokenString)
+            let result = try await Auth.auth().signIn(with: credential)
+            let firebaseUser = result.user
+            print("User \(firebaseUser.uid) signed in with email \(firebaseUser.email ?? "unknown")")
+        } catch {
+            print(error.localizedDescription)
+            errorMessage = error.localizedDescription
+            return false
+        }
+        return true
     }
 }
