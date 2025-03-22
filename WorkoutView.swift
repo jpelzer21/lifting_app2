@@ -7,6 +7,7 @@ struct WorkoutView: View {
     
     @Binding var workoutTitle: String
     @Binding var exercises: [Exercise]
+    
     @State private var showingAlert = false
     @State private var showingErrorAlert: Bool = false
     @State private var isEditingTitle: Bool = false
@@ -71,9 +72,6 @@ struct WorkoutView: View {
                     .edgesIgnoringSafeArea(.all)
                     .listStyle(GroupedListStyle())
                     
-                    
-                    
-                    
                 }
                 .onAppear {
                     if workoutTitle == "New Template" || workoutTitle == "New Workout" {
@@ -84,29 +82,28 @@ struct WorkoutView: View {
                 .ignoresSafeArea(.all)
             }
             
-            .onTapGesture {// Dismiss the keyboard when tapping anywhere on the screen
+            .onTapGesture { // Dismiss the keyboard when tapping anywhere on the screen
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             .toolbarBackgroundVisibility(.hidden)
             .navigationBarItems(trailing: Button("Finish Workout") {
-                if workoutTitle != "New Template" {
-                    showingAlert = true
-                } else {
-                    showingErrorAlert = true
-                }
-            }.alert(isPresented: $showingAlert) {
+                showingAlert = true
+            }
+            .alert(isPresented: $showingAlert) {
                 Alert(
                     title: Text("You have completed \(completedSets()) exercises"),
                     primaryButton: .default(Text("Finish")) {
                         print("Workout Finished")
                         saveWorkoutAsTemplate()
+                        //HomePageView().fetchTemplates(forceRefresh: true)
                         saveWorkout()
                         saveExercises()
                         presentationMode.wrappedValue.dismiss()
                     },
                     secondaryButton: .cancel(Text("Stay"))
                 )
-            }.buttonStyle(.borderedProminent).tint(.green).saturation(0.85))
+            }
+            .buttonStyle(.borderedProminent).tint(.green).saturation(0.85))
             .toolbar{
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: {
@@ -527,6 +524,17 @@ extension View {
 extension View {
     func customButtonStyle() -> some View {
         self.modifier(CustomButtonStyle())
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 

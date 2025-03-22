@@ -6,7 +6,7 @@
 //
 import SwiftUI
 
-struct ContentView: View {
+struct ContentView: View {    
     @State private var selectedIndex: Int = 0
     @State private var templates: [WorkoutTemplate] = [] // Store templates
     @State private var isTemplatesLoaded = false // Track if templates are loaded
@@ -14,7 +14,8 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedIndex) {
             NavigationStack {
-                HomePageView(templates: $templates, isTemplatesLoaded: $isTemplatesLoaded)
+                HomePageView()
+                
                     .navigationTitle("Home")
             }
             .tabItem {

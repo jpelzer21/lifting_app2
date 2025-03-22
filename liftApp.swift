@@ -26,11 +26,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct liftApp: App {
-    
     let persistenceController = PersistenceController.shared
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-
 
     var body: some Scene {
         WindowGroup {

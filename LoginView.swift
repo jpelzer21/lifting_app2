@@ -17,7 +17,7 @@ struct LoginView: View {
     
     @State private var firstName = ""
     @State private var lastName = ""
-    @State private var weight = ""
+//    @State private var weight = ""
     @State private var email = ""
     @State private var password = ""
     @State private var errorMessage: String?
@@ -55,10 +55,10 @@ struct LoginView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .autocapitalization(.words)
                     .padding(.horizontal)
-                TextField("Weight", text: $weight)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.words)
-                    .padding(.horizontal)
+//                TextField("Weight", text: $weight)
+//                    .textFieldStyle(RoundedBorderTextFieldStyle())
+//                    .autocapitalization(.words)
+//                    .padding(.horizontal)
             }
             
             TextField("Email", text: $email)
@@ -102,7 +102,9 @@ struct LoginView: View {
             // Google Sign-In Button
             Button(action: {
                 Task {
-                    _ = await signInWithGoogle()
+                    if let error = await signInWithGoogle() {
+                        errorMessage = error  // ✅ Correct because errorMessage is a String?
+                    }
                 }
             }) {
                 HStack {
@@ -211,7 +213,7 @@ struct LoginView: View {
             "uid": user.uid,
             "firstName": firstName,
             "lastName": lastName,
-            "weight": weight,
+//            "weight": weight,
             "email": user.email ?? "",
             "createdAt": Timestamp(date: Date())
         ]) { error in
@@ -226,38 +228,55 @@ struct LoginView: View {
     
 }
 
-extension LoginView {
-    @MainActor
-    func signInWithGoogle() async -> Bool {
-        guard let clientID = FirebaseApp.app()?.options.clientID else {
-            fatalError("No client ID found in Firebase configuration")
-        }
-        let config = GIDConfiguration(clientID: clientID)
-        GIDSignIn.sharedInstance.configuration = config
+@MainActor
+func signInWithGoogle() async -> String? {
+    guard let clientID = FirebaseApp.app()?.options.clientID else {
+        return "No client ID found in Firebase configuration"
+    }
+    
+    let config = GIDConfiguration(clientID: clientID)
+    GIDSignIn.sharedInstance.configuration = config
+    
+    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+          let window = windowScene.windows.first,
+          let rootViewController = window.rootViewController else {
+        return "No root view controller found"
+    }
+
+    do {
+        let userAuthentication = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+        let user = userAuthentication.user
         
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
-            print("There is no root view controller")
-            return false
+        guard let idToken = user.idToken else {
+            return "Google Sign-In Error: ID Token Missing"
         }
-        do {
-            let userAuthentication = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
-            let user = userAuthentication.user
-            guard let idToken = user.idToken else {
-                print("❌ Google Sign-In Error: ID Token Missing")
-                return false
-            }
-            let accessToken = user.accessToken
-            let credential = GoogleAuthProvider.credential(withIDToken: idToken.tokenString, accessToken: accessToken.tokenString)
-            let result = try await Auth.auth().signIn(with: credential)
-            let firebaseUser = result.user
-            print("User \(firebaseUser.uid) signed in with email \(firebaseUser.email ?? "unknown")")
-        } catch {
-            print(error.localizedDescription)
-            errorMessage = error.localizedDescription
-            return false
+        
+        let accessToken = user.accessToken
+        let credential = GoogleAuthProvider.credential(withIDToken: idToken.tokenString, accessToken: accessToken.tokenString)
+        let result = try await Auth.auth().signIn(with: credential)
+        let firebaseUser = result.user
+        
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(firebaseUser.uid)
+        
+        let document = try await userRef.getDocument()
+        if !document.exists {
+            let firstName = user.profile?.givenName ?? "Unknown"
+            let lastName = user.profile?.familyName ?? "Unknown"
+            
+            let userData: [String: Any] = [
+                "uid": firebaseUser.uid,
+                "firstName": firstName,
+                "lastName": lastName,
+                "email": firebaseUser.email ?? "",
+                "createdAt": Timestamp(date: Date())
+            ]
+            
+            try await userRef.setData(userData)
         }
-        return true
+        
+        return nil  // ✅ No error
+    } catch {
+        return error.localizedDescription  // ✅ Return error message
     }
 }

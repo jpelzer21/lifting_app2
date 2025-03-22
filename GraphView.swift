@@ -24,6 +24,34 @@ struct GraphView: View {
         let minValue = exerciseSets.map { metricValue(for: $0) }.min() ?? 0
         return max(0, minValue-(minValue*0.25))
     }
+    
+    // Calculate workout statistics
+    private var heaviestWeight: Double {
+        exerciseSets.map { $0.weight }.max() ?? 0
+    }
+    
+    private var bestSet: (weight: Double, reps: Int)? {
+        exerciseSets.max(by: { ($0.weight * Double($0.reps)) < ($1.weight * Double($1.reps)) })
+            .map { ($0.weight, $0.reps) }
+    }
+    
+    private var oneRepMax: Double {
+        guard let bestSet = bestSet else { return 0 }
+        return bestSet.weight * (1 + Double(bestSet.reps) / 30)
+    }
+    
+    private var bestSession: Double {
+        let sessionVolumes = Dictionary(grouping: exerciseSets, by: { Calendar.current.startOfDay(for: $0.date) })
+            .mapValues { sets in sets.reduce(0) { $0 + ($1.weight * Double($1.reps)) } }
+        return sessionVolumes.values.max() ?? 0
+    }
+    
+    // find max number of sets
+    private var maxSetsInSession: Int {
+        let sessionSets = Dictionary(grouping: exerciseSets, by: { Calendar.current.startOfDay(for: $0.date) })
+            .mapValues { $0.count }
+        return sessionSets.values.max() ?? 0
+    }
 
     var body: some View {
         let firstSets = exerciseSets.filter { $0.number == 1 }
@@ -99,21 +127,11 @@ struct GraphView: View {
                 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Best Set:")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Spacer()
-                        Text("N/A") // Placeholder for dynamic data
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
                         Text("Heaviest Weight:")
                             .font(.headline)
                             .foregroundColor(.primary)
                         Spacer()
-                        Text("N/A")
+                        Text(heaviestWeight > 0 ? "\(Int(heaviestWeight))lbs" : "N/A")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -123,7 +141,17 @@ struct GraphView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
                         Spacer()
-                        Text("N/A")
+                        Text(oneRepMax > 0 ? "\(Int(oneRepMax))lbs" : "N/A")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Best Set:")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text(bestSet != nil ? "\(Int(bestSet!.weight))lbs x \(bestSet!.reps)" : "N/A")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -133,7 +161,7 @@ struct GraphView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
                         Spacer()
-                        Text("N/A")
+                        Text(bestSession > 0 ? "\(Int(bestSession))lbs" : "N/A")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
