@@ -13,7 +13,7 @@ import SwiftUI
 class ExercisesViewModel: ObservableObject {
     @Published var exercises: [(name: String, setCount: Int?, lastSetDate: Date?)] = []
     @Published var isLoading = true
-    @Published var selectedSortOption: String = "Most Recent"
+    @Published var selectedSortOption: String = "A-Z"
 
     private var listener: ListenerRegistration?
     private var userID: String? { Auth.auth().currentUser?.uid }
@@ -50,11 +50,12 @@ class ExercisesViewModel: ObservableObject {
                     print("Error fetching exercises: \(error.localizedDescription)")
                     self.exercises = []
                 } else {
-                    self.exercises = snapshot?.documents.map { doc in
-                        let name = doc.documentID
+                    self.exercises = snapshot?.documents.compactMap { doc in
+                        guard let name = doc.data()["name"] as? String else { return nil }
                         let setCount = doc.data()["setCount"] as? Int
                         let lastSetTimestamp = doc.data()["lastSetDate"] as? Timestamp
                         let lastSetDate = lastSetTimestamp?.dateValue()
+                        
                         return (name: name, setCount: setCount, lastSetDate: lastSetDate)
                     } ?? []
                 }

@@ -57,73 +57,81 @@ struct GraphView: View {
         let firstSets = exerciseSets.filter { $0.number == 1 }
 //        ScrollView{
             VStack (spacing: 5) {
+                
                 Spacer()
-                Text(exerciseName.replacingOccurrences(of: "_", with: " ").capitalized)
-                    .font(.largeTitle)
-                    .bold()
-                    .padding()
                 
-                
-                Picker("Metric", selection: $selectedMetric) {
-                    ForEach(Metric.allCases, id: \.self) { metric in
-                        Text(metric.rawValue).tag(metric)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding()
-                if isLoading {
-                    ProgressView("Loading exercise data...")
+                VStack {
+                    Text(exerciseName.replacingOccurrences(of: "_", with: " ").capitalized)
+                        .font(.largeTitle)
+                        .bold()
                         .padding()
-                } else {
-                    if exerciseSets.isEmpty {
-                        VStack {
-                            Text("No recorded sets for this exercise.")
-                                .foregroundColor(.gray)
+                    
+                    
+                    Picker("Metric", selection: $selectedMetric) {
+                        ForEach(Metric.allCases, id: \.self) { metric in
+                            Text(metric.rawValue).tag(metric)
                         }
-                    } else {
-                        if firstSets.count > 1 {
-                            Chart {
-                                ForEach(exerciseSets) { set in
-                                    PointMark(
-                                        x: .value("Date", set.date),
-                                        y: .value(selectedMetric.rawValue,
-                                                  selectedMetric == .weight ? set.weight :
-                                                    selectedMetric == .reps ? Double(set.reps) :
-                                                    set.weight * Double(set.reps))
-                                    )
-                                    .symbol(.circle)
-                                    .opacity(1/Double(set.number))
-                                    .foregroundStyle(Color.pink)
-                                }
-                                
-                                ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
-                                    LineMark(
-                                        x: .value("Date", set.date),
-                                        y: .value(selectedMetric.rawValue, metricValue(for: set))
-                                    )
-                                    .foregroundStyle(Color.pink)
-                                    .lineStyle(StrokeStyle(lineWidth: 2))
-                                }
-                                
-                            }
-                            .chartXAxis {
-                                AxisMarks(position: .bottom) {
-                                    AxisValueLabel(format: .dateTime.month().day())
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .trailing)
-                            }
-                            .chartYScale(domain: minYAxisValue...maxYAxisValue)
-                            .frame(height: 300)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding()
+                    if isLoading {
+                        ProgressView("Loading exercise data...")
                             .padding()
+                    } else {
+                        if exerciseSets.isEmpty {
+                            VStack {
+                                Spacer()
+                                Text("No recorded sets for this exercise.")
+                                    .foregroundColor(.gray)
+                                Spacer()
+                            }
                         } else {
-                            Text("Not enough data to display a trend.")
-                                .foregroundColor(.gray)
+                            if firstSets.count > 1 {
+                                Chart {
+                                    ForEach(exerciseSets) { set in
+                                        PointMark(
+                                            x: .value("Date", set.date),
+                                            y: .value(selectedMetric.rawValue,
+                                                      selectedMetric == .weight ? set.weight :
+                                                        selectedMetric == .reps ? Double(set.reps) :
+                                                        set.weight * Double(set.reps))
+                                        )
+                                        .symbol(.circle)
+                                        .opacity(1/Double(set.number))
+                                        .foregroundStyle(Color.pink)
+                                    }
+                                    
+                                    ForEach(Array(firstSets.enumerated()), id: \.element.id) { index, set in
+                                        LineMark(
+                                            x: .value("Date", set.date),
+                                            y: .value(selectedMetric.rawValue, metricValue(for: set))
+                                        )
+                                        .foregroundStyle(Color.pink)
+                                        .lineStyle(StrokeStyle(lineWidth: 2))
+                                    }
+                                    
+                                }
+                                .chartXAxis {
+                                    AxisMarks(position: .bottom) {
+                                        AxisValueLabel(format: .dateTime.month().day())
+                                    }
+                                }
+                                .chartYAxis {
+                                    AxisMarks(position: .trailing)
+                                }
+                                .chartYScale(domain: minYAxisValue...maxYAxisValue)
+                                .frame(height: 300)
                                 .padding()
+                            } else {
+                                Text("Not enough data to display a trend.")
+                                    .foregroundColor(.gray)
+                                    .padding()
+                            }
                         }
                     }
                 }
+                
+                Spacer()
                 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -186,32 +194,46 @@ struct GraphView: View {
     }
     
     private func fetchSets(name: String) {
-        print("FETCH SETS() CALLED")
+        print("FETCH SETS() CALLED for \(name)")
         guard let userID = Auth.auth().currentUser?.uid else {
             print("Error: User not logged in")
+            isLoading = false
             return
         }
+        
         let db = Firestore.firestore()
         let exerciseRef = db.collection("users").document(userID)
-            .collection("exercises").document(name)
+            .collection("exercises").document(name.lowercased().replacingOccurrences(of: " ", with: "_"))
             .collection("sets")
 
         exerciseRef.order(by: "date").getDocuments { snapshot, error in
-            guard let snapshot = snapshot, error == nil else {
-                print("Error fetching sets: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            isLoading = false
-            self.exerciseSets = snapshot.documents.compactMap { doc in
-                let data = doc.data()
-                return ExerciseSet(
-                    number: data["setNum"] as? Int ?? 1,
-                    weight: data["weight"] as? Double ?? 0,
-                    reps: data["reps"] as? Int ?? 0,
-                    date: (data["date"] as? Timestamp)?.dateValue() ?? Date()
-                )
+            DispatchQueue.main.async {
+                self.isLoading = false
+                if let error = error {
+                    print("Error fetching sets: \(error.localizedDescription)")
+                    self.exerciseSets = []  // Ensure we clear out old data
+                    return
+                }
+                
+                guard let documents = snapshot?.documents, !documents.isEmpty else {
+                    print("No sets found for \(name)")
+                    self.exerciseSets = []
+                    return
+                }
+                
+                self.exerciseSets = documents.compactMap { doc in
+                    let data = doc.data()
+                    let set = ExerciseSet(
+                        number: data["setNum"] as? Int ?? 1,
+                        weight: data["weight"] as? Double ?? 0,
+                        reps: data["reps"] as? Int ?? 0,
+                        date: (data["date"] as? Timestamp)?.dateValue() ?? Date()
+                    )
+                    return set
+                }
+                
+                print("Loaded \(self.exerciseSets.count) sets.")
             }
         }
     }
-    
 }

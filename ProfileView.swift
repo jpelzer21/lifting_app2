@@ -9,69 +9,74 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // Profile Image
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .frame(width: 100, height: 100)
-                    .foregroundColor(.blue)
-                    .padding(.top, 30)
-
-                // Profile Info Card
-                VStack(spacing: 10) {
-                    Text(userViewModel.userName)
-                        .font(.title2)
-                        .fontWeight(.bold)
-
-                    Text("Weight: \(userViewModel.weight) lbs")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.secondary)
-
-                    Text(userViewModel.userEmail)
-                        .font(.footnote)
-                        .foregroundColor(.gray)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Profile Image
+                    Image(systemName: "person.crop.circle.fill")
+                        .resizable()
+                        .frame(width: 100, height: 100)
+                        .foregroundColor(.blue)
+                        .padding(.top, 30)
+                    
+                    // Profile Info Card
+                    VStack(spacing: 10) {
+                        Text(userViewModel.userName)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Weight: \(userViewModel.weight) lbs")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.secondary)
+                        
+                        Text(userViewModel.userEmail)
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(15)
+                    .padding(.horizontal, 20)
+                    
+                    // Navigation Buttons
+                    VStack(spacing: 10) {
+                        NavigationLink(destination: CalendarView()) {
+                            CustomButton(title: "View Calendar", color: .blue)
+                        }
+                        NavigationLink(destination: HistoryView()) {
+                            CustomButton(title: "Workout History", color: .pink)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    Spacer()
+                    
+                    // Logout Button
+                    Button {
+                        showingAlert = true
+                    } label: {
+                        CustomButton(title: "Log Out", color: .red)
+                    }
+                    .alert(isPresented: $showingAlert) {
+                        Alert(
+                            title: Text("Log Out?"),
+                            message: Text("Are you sure you want to sign out?"),
+                            primaryButton: .destructive(Text("Yes")) {
+                                signOut()
+                            },
+                            secondaryButton: .cancel()
+                        )
+                    }
+                    
+                    Spacer()
                 }
                 .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
-                .cornerRadius(15)
-                .padding(.horizontal, 20)
-
-                // Navigation Buttons
-                VStack(spacing: 10) {
-                    NavigationLink(destination: CalendarView()) {
-                        CustomButton(title: "View Calendar", color: .blue)
-                    }
-                    NavigationLink(destination: HistoryView()) {
-                        CustomButton(title: "Workout History", color: .pink)
-                    }
-                }
-                .padding(.horizontal, 20)
-
-                Spacer()
-
-                // Logout Button
-                Button {
-                    showingAlert = true
-                } label: {
-                    CustomButton(title: "Log Out", color: .red)
-                }
-                .alert(isPresented: $showingAlert) {
-                    Alert(
-                        title: Text("Log Out?"),
-                        message: Text("Are you sure you want to sign out?"),
-                        primaryButton: .destructive(Text("Yes")) {
-                            signOut()
-                        },
-                        secondaryButton: .cancel()
-                    )
-                }
-
-                Spacer()
+                .navigationTitle("Profile")
             }
-            .padding()
-            .navigationTitle("Profile")
+            .refreshable {
+                userViewModel.fetchUserData()
+            }
         }
     }
 
@@ -80,6 +85,10 @@ struct ProfileView: View {
         print("SIGN OUT() CALLED")
         do {
             try Auth.auth().signOut()
+
+            // Reset user data
+            UserViewModel.shared.resetUserData()
+            
             presentationMode.wrappedValue.dismiss()
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                let window = scene.windows.first {
@@ -87,7 +96,7 @@ struct ProfileView: View {
                 window.makeKeyAndVisible()
             }
         } catch {
-            print("Error signing out: \(error.localizedDescription)")
+            print("❌ Error signing out: \(error.localizedDescription)")
         }
     }
 }

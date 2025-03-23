@@ -181,11 +181,19 @@ struct LoginView: View {
         isLoading = true
         errorMessage = nil
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
-            isLoading = false
+            self.isLoading = false
             if let error = error {
-                errorMessage = error.localizedDescription
-            } else {
-                print("✅ User signed in: \(result?.user.email ?? "")")
+                self.errorMessage = error.localizedDescription
+            } else if let user = result?.user {
+                print("✅ User signed in: \(user.email ?? "")")
+
+                // Reset and force fetch user data
+                UserViewModel.shared.resetUserData()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    UserViewModel.shared.fetchUserData()
+                }
+
+                self.isSignedIn = true
             }
         }
     }
@@ -196,12 +204,20 @@ struct LoginView: View {
         isLoading = true
         errorMessage = nil
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
-            isLoading = false
+            self.isLoading = false
             if let error = error {
-                errorMessage = error.localizedDescription
+                self.errorMessage = error.localizedDescription
             } else if let user = result?.user {
-                saveUserData(user: user)
+                self.saveUserData(user: user)
                 print("✅ User registered: \(user.email ?? "")")
+
+                // Reset and force fetch user data
+                UserViewModel.shared.resetUserData()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    UserViewModel.shared.fetchUserData()
+                }
+
+                self.isSignedIn = true
             }
         }
     }

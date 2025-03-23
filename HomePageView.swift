@@ -149,9 +149,9 @@ struct HomePageView: View {
         .fullScreenCover(isPresented: $showWorkoutView) {
             WorkoutView(workoutTitle: $selectedWorkoutTitle, exercises: $selectedExercises)
         }
-//        .refreshable {
-//            viewModel.
-//        }
+        .refreshable {
+            viewModel.fetchTemplatesRealtime()
+        }
     }
 }
  

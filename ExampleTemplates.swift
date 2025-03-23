@@ -18,57 +18,119 @@ import Foundation
 struct ExampleTemplates {
     static let templates: [WorkoutTemplate] = [
         WorkoutTemplate(
-            id: "chest_day",
-            name: "Chest Day",
+            id: "the_big_3",
+            name: "The Big 3",
             exercises: [
                 Exercise(name: "Bench Press", sets: [
                     ExerciseSet(number: 1, weight: 135, reps: 10),
                     ExerciseSet(number: 2, weight: 155, reps: 8),
                     ExerciseSet(number: 3, weight: 175, reps: 6)
                 ]),
-                Exercise(name: "Incline Dumbbell Press", sets: [
+                Exercise(name: "Squat", sets: [
                     ExerciseSet(number: 1, weight: 50, reps: 10),
                     ExerciseSet(number: 2, weight: 55, reps: 8)
                 ]),
-                Exercise(name: "Cable Flys", sets: [
+                Exercise(name: "Deadlift", sets: [
                     ExerciseSet(number: 1, weight: 30, reps: 12),
                     ExerciseSet(number: 2, weight: 35, reps: 10)
                 ])
             ]
         ),
         WorkoutTemplate(
-            id: "back_day",
-            name: "Back Day",
+            id: "back_and_biceps",
+            name: "Back and Biceps",
             exercises: [
-                Exercise(name: "Pull-ups", sets: [
-                    ExerciseSet(number: 1, weight: 0, reps: 10),
-                    ExerciseSet(number: 2, weight: 0, reps: 8)
+                Exercise(name: "Pull Ups", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
                 ]),
-                Exercise(name: "Deadlifts", sets: [
-                    ExerciseSet(number: 1, weight: 185, reps: 8),
-                    ExerciseSet(number: 2, weight: 225, reps: 6)
+                Exercise(name: "Lat Pulldowns", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
                 ]),
-                Exercise(name: "Bent-over Rows", sets: [
-                    ExerciseSet(number: 1, weight: 95, reps: 12),
-                    ExerciseSet(number: 2, weight: 115, reps: 10)
-                ])
+                Exercise(name: "Seated Rows", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Bicep Curls", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Preacher Curls", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
             ]
         ),
         WorkoutTemplate(
-            id: "leg_day",
-            name: "Leg Day",
+            id: "chest_and_triceps",
+            name: "Chest and Triceps",
+            exercises: [
+                Exercise(name: "Bench Press", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Incline Bench Press", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Tricep Extensions", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Overhead Tricep Extensions", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Chest Flys", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Weighted Dips", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 3, weight: 0, reps: 8)
+                ]),
+            ]
+        ),
+        WorkoutTemplate(
+            id: "legs",
+            name: "Legs",
             exercises: [
                 Exercise(name: "Squats", sets: [
-                    ExerciseSet(number: 1, weight: 135, reps: 10),
-                    ExerciseSet(number: 2, weight: 185, reps: 8)
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 1, weight: 0, reps: 8)
                 ]),
                 Exercise(name: "Leg Press", sets: [
-                    ExerciseSet(number: 1, weight: 200, reps: 12),
-                    ExerciseSet(number: 2, weight: 250, reps: 10)
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 1, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Leg Extensions", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 1, weight: 0, reps: 8)
+                ]),
+                Exercise(name: "Hamstring Curls", sets: [
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 1, weight: 0, reps: 8)
                 ]),
                 Exercise(name: "Calf Raises", sets: [
-                    ExerciseSet(number: 1, weight: 90, reps: 15),
-                    ExerciseSet(number: 2, weight: 110, reps: 12)
+                    ExerciseSet(number: 1, weight: 0, reps: 8),
+                    ExerciseSet(number: 2, weight: 0, reps: 8),
+                    ExerciseSet(number: 1, weight: 0, reps: 8)
                 ])
             ]
         )

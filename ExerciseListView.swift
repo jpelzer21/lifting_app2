@@ -8,6 +8,7 @@ struct ExerciseListView: View {
     @State private var isDeleting = false
     @State private var exerciseToDelete: String?
     @State private var showDeleteConfirmation = false
+    @State private var isAddingExercise = false
 
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -29,27 +30,41 @@ struct ExerciseListView: View {
                 }
                 .actionSheet(isPresented: $showSortOptions) {
                     ActionSheet(title: Text("Sort By"), buttons: [
-                        .default(Text("Most Recent")) { viewModel.selectedSortOption = "Most Recent"; viewModel.fetchExercises() },
-                        .default(Text("Most Sets")) { viewModel.selectedSortOption = "Most Sets"; viewModel.fetchExercises() },
                         .default(Text("A-Z")) { viewModel.selectedSortOption = "Alphabetical A-Z"; viewModel.fetchExercises() },
                         .default(Text("Z-A")) { viewModel.selectedSortOption = "Alphabetical Z-A"; viewModel.fetchExercises() },
+                        .default(Text("Most Recent")) { viewModel.selectedSortOption = "Most Recent"; viewModel.fetchExercises() },
+                        .default(Text("Most Sets")) { viewModel.selectedSortOption = "Most Sets"; viewModel.fetchExercises() },
                         .cancel()
                     ])
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.trailing, 20)
-
-                Button(action: { isDeleting.toggle() }) {
-                    Image(systemName: isDeleting ? "ellipsis.rectangle.fill" : "ellipsis")
+                
+                if viewModel.exercises.isEmpty {
+                    Button(action: { isDeleting.toggle() }) {
+                        Image(systemName: isDeleting ? "ellipsis.rectangle.fill" : "ellipsis")
+                            .imageScale(.large)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 10, height: 10)
+                            .foregroundColor(.pink)
+                            .padding(.vertical, 5)
+                            .shadow(radius: 5)
+                    }
+                    .padding(.trailing, 30)
+                }
+                
+                Button {
+                    isAddingExercise = true
+                } label: {
+                    Image(systemName: "plus")
                         .imageScale(.large)
-                        .aspectRatio(contentMode: .fill)
                         .frame(width: 10, height: 10)
                         .foregroundColor(.pink)
-                        .padding(.vertical, 5)
+                        .padding()
                         .shadow(radius: 5)
                 }
-                .padding(.trailing, 30)
             }
+            .padding(.horizontal, 10)
 
             if viewModel.isLoading {
                 ProgressView("Loading...").padding()
@@ -67,7 +82,7 @@ struct ExerciseListView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
 
-                    Text("Add an exercise by making a template!")
+                    Text("Add an exercise by pressing +!")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     Spacer()
@@ -112,5 +127,8 @@ struct ExerciseListView: View {
             )
         }
         .navigationTitle("Exercises")
+        .sheet(isPresented: $isAddingExercise) {
+            AddExerciseView()
+        }
     }
 }

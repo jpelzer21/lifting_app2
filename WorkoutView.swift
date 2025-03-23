@@ -95,7 +95,6 @@ struct WorkoutView: View {
                     primaryButton: .default(Text("Finish")) {
                         print("Workout Finished")
                         saveWorkoutAsTemplate()
-                        //HomePageView().fetchTemplates(forceRefresh: true)
                         saveWorkout()
                         saveExercises()
                         presentationMode.wrappedValue.dismiss()
@@ -146,6 +145,8 @@ struct WorkoutView: View {
     private func saveExercises() {
         print("SAVE EXERCISES() CALLED")
         
+        
+        
         guard let userID = Auth.auth().currentUser?.uid else {
             print("User not authenticated")
             return
@@ -170,7 +171,7 @@ struct WorkoutView: View {
                     print("\(exercise.name) already exists in the database.")
                 }
                 let exerciseData: [String: Any] = [
-                    "name": exercise.name,
+                    "name": exercise.name.capitalized,
                     "lastSetDate": Timestamp(date: Date()),
                     "setCount": FieldValue.increment(Int64(exercise.sets.filter { $0.isCompleted }.count)) // only increase if set is completed
                 ]
